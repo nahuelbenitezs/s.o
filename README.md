@@ -4,7 +4,7 @@ Sistemas Operativos.
 
 ## Cómo compilar y ejecutar
 
-Necesitás el **JDK** (Java 8 o superior):
+Necesitás el JDK (Java 8 o superior):
 
 ```
 javac *.java
@@ -41,15 +41,15 @@ impactada y utilización).
 Despachador central con reloj virtual (simulación por eventos discretos):
 
 - **1 hilo Generador** (productor): lee el archivo y deposita las llegadas en una
-  cola compartida. Sincroniza con el despachador mediante **Productor-Consumidor
-  con semáforos** (`mutex` + semáforo contador `items`).
+  cola compartida. Sincroniza con el despachador mediante Productor-Consumidor
+  con semáforos (`mutex` + semáforo contador `items`).
 - **1 hilo Despachador** (consumidor + planificador): decide a qué amenaza atender
   (según la estrategia) y le entrega el trabajo a un interceptor libre. Es el único
   que adelanta el reloj y el único que imprime, por lo que la salida queda
-  **ordenada en el tiempo** y la simulación es **determinista**.
+  ordenada en el tiempo y la simulación es determinista.
 - **N hilos Interceptor** (recursos): cada interceptor es un hilo propio que espera
-  una asignación, ejecuta la recarga y, al terminar, **libera** (`release()`) el
-  semáforo contador `Semaphore(N)`. El Despachador **reserva** un permiso con
+  una asignación, ejecuta la recarga y, al terminar, libera (`release()`) el
+  semáforo contador `Semaphore(N)`. El Despachador reserva un permiso con
   `tryAcquire()` (no bloqueante) al asignar y cada Interceptor lo libera al
   terminar. Las amenazas compiten por una capacidad limitada de N recursos; el
   Despachador resuelve esa competencia con la estrategia y asigna el trabajo a uno
@@ -90,9 +90,9 @@ prioridad por criticidad protege).
 P = criticidad * 10000 + (5000 - tiempoRestante) + envejecimiento
 ```
 
-El factor `10000` (≥ rango de la urgencia) hace que la **criticidad domine** sobre
-la urgencia. El **envejecimiento** reduce el riesgo de inanición (sobre todo entre
-amenazas de igual criticidad). La prioridad se **recalcula en cada decisión**.
+El factor `10000` (≥ rango de la urgencia) hace que la criticidad domine sobre
+la urgencia. El envejecimiento reduce el riesgo de inanición (sobre todo entre
+amenazas de igual criticidad). La prioridad se recalcula en cada decisión.
 
 ## Estrategias
 
@@ -106,5 +106,5 @@ amenazas de igual criticidad). La prioridad se **recalcula en cada decisión**.
 ## Estadísticas
 
 Generadas, interceptadas, impactadas, tiempo promedio de espera y de retorno
-(turnaround), tasa de interceptación, throughput, **utilización de los
-interceptores** y **criticidad total impactada**.
+(turnaround), tasa de interceptación, throughput, utilización de los
+interceptores y criticidad total impactada.
