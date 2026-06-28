@@ -7,10 +7,13 @@ import java.util.concurrent.TimeUnit;
  * Hay N instancias corriendo en paralelo. Todas compiten por tomar amenazas
  * de la MISMA PriorityBlockingQueue compartida: la cola garantiza thread-safety
  * y devuelve siempre la amenaza de mayor prioridad segun el Comparator
- * definido en el Simulador
+ * definido en el Simulador.
  *
  * Protocolo de toma:
- *   1. poll(200ms) -> saca la amenaza de mayor prioridad.
+ *   1. poll(tickPolling) -> saca la amenaza de mayor prioridad.
+ *      tickPolling es la MISMA resolucion de tiempo que usa el Monitor
+ *      (antes el Monitor usaba 100ms y el Interceptor 200ms hardcodeado
+ *      por separado: dos relojes distintos para el mismo sistema).
  *   2. intentarTomar() -> CAS PENDIENTE->EN_PROCESO.
  *      Si falla (el Monitor ya la marco impactada), descarta y busca otra.
  *   3. sleep(tiempoRecarga) -> simula el tiempo de servicio.
@@ -22,29 +25,31 @@ import java.util.concurrent.TimeUnit;
 public class Interceptor extends Thread {
 
     private final BlockingQueue<Amenaza> cola;
-    private final Estadisticas stats;
-    private final long inicioSimulacion;
-    private final int tiempoRecarga; // ms de servicio fijo
+    private final Estadisticas           stats;
+    private final long                   inicioSimulacion;
+    private final int                    tiempoRecarga; // ms de servicio fijo
+    private final int                    tickPolling;   // ms de espera en poll()
 
     private volatile boolean activo = true;
 
     public Interceptor(int numero, BlockingQueue<Amenaza> cola, Estadisticas stats,
-                       long inicioSimulacion, int tiempoRecarga) {
+                       long inicioSimulacion, int tiempoRecarga, int tickPolling) {
         super("Interceptor-" + numero);
-        this.cola = cola;
-        this.stats = stats;
+        this.cola             = cola;
+        this.stats            = stats;
         this.inicioSimulacion = inicioSimulacion;
-        this.tiempoRecarga = tiempoRecarga;
+        this.tiempoRecarga    = tiempoRecarga;
+        this.tickPolling      = tickPolling;
     }
 
     @Override
     public void run() {
         while (activo) {
             try {
-                Amenaza a = cola.poll(200, TimeUnit.MILLISECONDS);
+                Amenaza a = cola.poll(tickPolling, TimeUnit.MILLISECONDS);
                 if (a == null) continue;
 
-                // CAS: si el Monitor ya la impacto, descartamos y seguimos
+                // CAS: si el Monitor ya la impacto, descartamos y seguimos.
                 if (!a.intentarTomar()) continue;
 
                 long espera = (System.currentTimeMillis() - inicioSimulacion)
