@@ -4,10 +4,8 @@ import java.util.concurrent.Semaphore;
  * Guarda los contadores compartidos de la simulacion.
  *
  * SINCRONIZACION: semaforo binario (Semaphore(1)) como mutex.
- * Un solo hilo a la vez modifica los contadores. Esta es la alternativa
- * explicitamente pedida en la letra (vs. synchronized).
  *
- * Metricas incluidas (segun requerimientos de la entrega final):
+ * Metricas incluidas:
  *   - generadas, interceptadas, impactadas
  *   - tiempo promedio de espera de las interceptadas
  *   - utilizacion de interceptores (tiempo activo / tiempo total)
@@ -24,7 +22,7 @@ public class Estadisticas {
     private int  interceptadas           = 0;
     private int  impactadas              = 0;
 
-    // Tiempo de espera (para interceptadas)
+    // Tiempo de espera
     private long sumaEsperaInterceptadas = 0;
 
     // Metricas de danio
@@ -36,10 +34,10 @@ public class Estadisticas {
     private long inicioSimulacion        = 0;
     private int  cantInterceptores       = 0;
 
-    // Nombre de la estrategia actual (para el resumen)
+    // Nombre de la estrategia actual
     private String nombreEstrategia      = "";
 
-    // Fin de la simulacion (se setea al finalizar)
+    // Fin de la simulacion
     private long finSimulacion           = 0;
 
     public void setConfiguracion(long inicioSimulacion, int cantInterceptores, String nombreEstrategia) {
@@ -55,9 +53,7 @@ public class Estadisticas {
         }
     }
 
-    // ------------------------------------------------------------------ //
-    // Registros                                                            //
-    // ------------------------------------------------------------------ //
+    // Registros
 
     public void setFin(long finMs) {
         try {
@@ -70,7 +66,7 @@ public class Estadisticas {
         }
     }
 
-    /** Devuelve el CSV usando el fin ya almacenado internamente. */
+    // Devuelve el CSV
     public String toCSV() {
         return toCSV(finSimulacion > 0 ? finSimulacion : System.currentTimeMillis());
     }
@@ -112,9 +108,7 @@ public class Estadisticas {
         }
     }
 
-    // ------------------------------------------------------------------ //
-    // Lecturas (con proteccion del semaforo)                              //
-    // ------------------------------------------------------------------ //
+    // Lecturas (con proteccion del semaforo)
 
     public int getGeneradas() {
         try {
@@ -140,9 +134,7 @@ public class Estadisticas {
         }
     }
 
-    // ------------------------------------------------------------------ //
-    // Resumen estadistico                                                  //
-    // ------------------------------------------------------------------ //
+    // Resumen estadistico
 
     public void imprimirResumen(long finSimulacion) {
         try {
@@ -151,7 +143,7 @@ public class Estadisticas {
 
             System.out.println();
             System.out.println("╔══════════════════════════════════════════════════════════╗");
-            System.out.println("║           RESUMEN DE LA SIMULACION                      ║");
+            System.out.println("║           RESUMEN DE LA SIMULACION                       ║");
             System.out.printf ("║  Estrategia: %-42s ║%n", nombreEstrategia);
             System.out.println("╠══════════════════════════════════════════════════════════╣");
             System.out.printf ("║  Amenazas generadas     : %-30d ║%n", generadas);

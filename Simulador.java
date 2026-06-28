@@ -1,3 +1,4 @@
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -5,13 +6,13 @@ import java.util.Scanner;
 import java.util.concurrent.PriorityBlockingQueue;
 
 /*
- * Clase principal del Sistema Concurrente de Intercepcion de Amenazas Aereas.
+ * Clase principal del Sistema
  *
  * MODOS DE USO:
  *
- *   Modo interactivo (sin argumentos):
+ *   Modo interactivo:
  *     java Simulador
- *     -> muestra menu y permite elegir estrategia y escenario.
+ *     -> muestra menu y permite elegir estrategia y escenario
  *
  *   Modo directo (argumentos):
  *     java Simulador <archivo> [interceptores] [recargaMs] [estrategia 1-4]
@@ -20,48 +21,43 @@ import java.util.concurrent.PriorityBlockingQueue;
  *     java Simulador <archivo> [interceptores] [recargaMs] --batch
  *
  * COMPONENTES CONCURRENTES:
- *   1 hilo Generador  : lee el archivo y mete amenazas en la cola.
- *   N hilos Interceptor: compiten por atender las amenazas.
- *   1 hilo Monitor    : hace correr el tiempo; impacta las que expiran.
+ *   1 hilo Generador: lee el archivo y mete amenazas en la cola
+ *   N hilos Interceptor: compiten por atender las amenazas
+ *   1 hilo Monitor: hace correr el tiempo; impacta las que expiran
  *
  * RECURSO COMPARTIDO:
- *   PriorityBlockingQueue<Amenaza> con Comparator segun la estrategia elegida.
- *   Es thread-safe (lock interno del JDK) y mantiene el orden de prioridad.
+ *   PriorityBlockingQueue<Amenaza> con Comparator segun la estrategia elegida
+ *   Es thread-safe (lock interno del JDK) y mantiene el orden de prioridad
  *
- * SINCRONIZACION (sin usar synchronized, segun la letra):
- *   - Semaforo binario (Semaphore(1)) en Estadisticas -> exclusion mutua en contadores.
- *   - AtomicReference + compareAndSet en Amenaza      -> transiciones de estado lock-free.
+ * SINCRONIZACION:
+ *   - Semaforo mutex (Semaphore(1)) en Estadisticas -> exclusion mutua
+ *   - AtomicReference + compareAndSet en Amenaza -> transiciones de estado
  */
 public class Simulador {
 
-    // ------------------------------------------------------------------ //
-    // Parametros por defecto                                               //
-    // ------------------------------------------------------------------ //
-    private static final int    DEF_INTERCEPTORES   = 2;
-    private static final int    DEF_RECARGA_MS      = 1000;
-    private static final int    DEF_PAUSA_LLEGADAS  = 250;   // ms entre amenazas
-    private static final int    DEF_TICK_MONITOR    = 100;   // resolucion del reloj (ms)
-    private static final String DEF_ARCHIVO         = "amenazas.txt";
+    //parametros por defecto
+    private static final int DEF_INTERCEPTORES = 2;
+    private static final int DEF_RECARGA_MS = 1000;
+    private static final int DEF_PAUSA_LLEGADAS = 250; // ms entre amenazas
+    private static final int DEF_TICK_MONITOR = 100; // resolucion del reloj (ms)
+    private static final String DEF_ARCHIVO = "amenazas.txt";
 
-    // ------------------------------------------------------------------ //
     // Punto de entrada                                                     //
-    // ------------------------------------------------------------------ //
     public static void main(String[] args) throws InterruptedException {
 
         if (args.length == 0) {
-            // ---- Modo interactivo ----------------------------------------
             modoInteractivo();
         } else if (args.length >= 4 && args[args.length - 1].equalsIgnoreCase("--batch")) {
-            // ---- Modo batch: todas las estrategias -----------------------
-            String archivo     = args[0];
-            int interceptores  = Integer.parseInt(args[1]);
-            int recarga        = Integer.parseInt(args[2]);
+            //Modo batch
+            String archivo = args[0];
+            int interceptores = Integer.parseInt(args[1]);
+            int recarga = Integer.parseInt(args[2]);
             modoBatch(archivo, interceptores, recarga);
         } else {
-            // ---- Modo directo con argumentos -----------------------------
-            String   archivo      = args[0];
-            int interceptores     = args.length >= 2 ? Integer.parseInt(args[1]) : DEF_INTERCEPTORES;
-            int recarga           = args.length >= 3 ? Integer.parseInt(args[2]) : DEF_RECARGA_MS;
+            //directo con argumentos
+            String archivo = args[0];
+            int interceptores = args.length >= 2 ? Integer.parseInt(args[1]) : DEF_INTERCEPTORES;
+            int recarga = args.length >= 3 ? Integer.parseInt(args[2]) : DEF_RECARGA_MS;
             Estrategia estrategia = Estrategia.COMBINADA; // default
             if (args.length >= 4) {
                 try {
@@ -72,13 +68,11 @@ public class Simulador {
                 }
             }
             ejecutar(archivo, interceptores, recarga, DEF_PAUSA_LLEGADAS,
-                     DEF_TICK_MONITOR, estrategia, true);
+                    DEF_TICK_MONITOR, estrategia, true);
         }
     }
 
-    // ------------------------------------------------------------------ //
-    // Modo interactivo                                                     //
-    // ------------------------------------------------------------------ //
+    // Modo interactivo
     private static void modoInteractivo() throws InterruptedException {
         Scanner sc = new Scanner(System.in);
 
@@ -98,10 +92,18 @@ public class Simulador {
         String archivo;
         int opEsc = leerEntero(sc, 1, 5);
         switch (opEsc) {
-            case 1: archivo = "amenazas.txt";                   break;
-            case 2: archivo = "escenario_borde_critico.txt";    break;
-            case 3: archivo = "escenario_hipersonico.txt";      break;
-            case 4: archivo = "escenario_borde_limite.txt";     break;
+            case 1:
+                archivo = "amenazas.txt";
+                break;
+            case 2:
+                archivo = "escenario_borde_critico.txt";
+                break;
+            case 3:
+                archivo = "escenario_hipersonico.txt";
+                break;
+            case 4:
+                archivo = "escenario_borde_limite.txt";
+                break;
             default:
                 System.out.print("Nombre del archivo: ");
                 archivo = sc.nextLine().trim();
@@ -126,13 +128,11 @@ public class Simulador {
         } else {
             Estrategia e = Estrategia.values()[opEst - 1];
             ejecutar(archivo, interceptores, recarga,
-                     DEF_PAUSA_LLEGADAS, DEF_TICK_MONITOR, e, true);
+                    DEF_PAUSA_LLEGADAS, DEF_TICK_MONITOR, e, true);
         }
     }
 
-    // ------------------------------------------------------------------ //
-    // Modo batch: ejecuta TODAS las estrategias y compara                 //
-    // ------------------------------------------------------------------ //
+    // Modo batch: ejecuta TODAS las estrategias y compara
     private static void modoBatch(String archivo, int interceptores, int recarga)
             throws InterruptedException {
 
@@ -142,16 +142,16 @@ public class Simulador {
 
         List<String> csvLineas = new ArrayList<>();
         csvLineas.add("estrategia,generadas,interceptadas,impactadas,tasa(%),promEspera(ms),"
-                     + "danioTotal,criticidadTotal,utilizacion(%)");
+                + "danioTotal,criticidadTotal,utilizacion(%)");
 
         for (Estrategia e : Estrategia.values()) {
             System.out.println("\n--- Ejecutando: " + e.getNombre() + " ---");
             Estadisticas stats = ejecutar(archivo, interceptores, recarga,
-                                          DEF_PAUSA_LLEGADAS, DEF_TICK_MONITOR, e, false);
+                    DEF_PAUSA_LLEGADAS, DEF_TICK_MONITOR, e, false);
             if (stats != null) {
                 csvLineas.add(stats.toCSV());
             }
-            // Pausa entre ejecuciones para que los hilos terminen limpio
+            // Pausa entre ejecuciones
             Thread.sleep(500);
         }
 
@@ -169,12 +169,9 @@ public class Simulador {
         System.out.println("╚════════════════════════════════╩══════╩══════╩════════╩══════════╝");
     }
 
-    // ------------------------------------------------------------------ //
-    // Metodo principal de ejecucion de una simulacion                     //
-    // ------------------------------------------------------------------ //
     static Estadisticas ejecutar(String archivo, int cantInterceptores, int recarga,
-                                  int pausaLlegadas, int tickMonitor,
-                                  Estrategia estrategia, boolean imprimirResumen)
+            int pausaLlegadas, int tickMonitor,
+            Estrategia estrategia, boolean imprimirResumen)
             throws InterruptedException {
 
         System.out.println("\n=== Sistema de Intercepcion de Amenazas Aereas ===");
@@ -191,16 +188,17 @@ public class Simulador {
         PriorityBlockingQueue<Amenaza> cola = new PriorityBlockingQueue<>(
                 32,
                 Comparator.comparingDouble((Amenaza a) -> a.prioridad(finalEstrategia))
-                          .reversed());
+                        .reversed());
 
         Estadisticas stats = new Estadisticas();
         long inicio = System.currentTimeMillis();
         stats.setConfiguracion(inicio, cantInterceptores, estrategia.getNombre());
 
         // Crear hilos
-        Generador     generador    = new Generador(archivo, cola, stats, inicio,
-                                                   pausaLlegadas, estrategia);
+        Generador generador = new Generador(archivo, cola, stats, inicio, pausaLlegadas, estrategia);
+
         Interceptor[] interceptores = new Interceptor[cantInterceptores];
+
         for (int i = 0; i < cantInterceptores; i++) {
             interceptores[i] = new Interceptor(i + 1, cola, stats, inicio, recarga);
         }
@@ -208,7 +206,9 @@ public class Simulador {
 
         // Arrancar
         monitor.start();
-        for (Interceptor in : interceptores) in.start();
+        for (Interceptor in : interceptores) {
+            in.start();
+        }
         generador.start();
 
         // Esperar a que terminen todas las amenazas
@@ -223,6 +223,7 @@ public class Simulador {
         // Apagar hilos ordenadamente
         monitor.detener();
         monitor.interrupt();
+
         for (Interceptor in : interceptores) {
             in.detener();
             in.interrupt();
@@ -230,7 +231,10 @@ public class Simulador {
 
         generador.join(2000);
         monitor.join(2000);
-        for (Interceptor in : interceptores) in.join(2000);
+
+        for (Interceptor in : interceptores) {
+            in.join(2000);
+        }
 
         if (imprimirResumen) {
             stats.imprimirResumen(fin);
@@ -242,17 +246,17 @@ public class Simulador {
         return stats;
     }
 
-    // ------------------------------------------------------------------ //
-    // Utilitarios                                                          //
-    // ------------------------------------------------------------------ //
-
+    // Utilitarios
     private static int leerEntero(Scanner sc, int min, int max) {
         while (true) {
             try {
                 String linea = sc.nextLine().trim();
                 int v = linea.isEmpty() ? min : Integer.parseInt(linea);
-                if (v >= min && v <= max) return v;
-            } catch (NumberFormatException ignored) {}
+                if (v >= min && v <= max) {
+                    return v;
+                }
+            } catch (NumberFormatException ignored) {
+            }
             System.out.print("Valor invalido. Ingrese un numero entre " + min + " y " + max + ": ");
         }
     }

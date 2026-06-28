@@ -1,6 +1,4 @@
-/*
- * Estados posibles por los que pasa una amenaza durante la simulacion.
- */
+//Estados posibles por los que pasa una amenaza durante la simulacion.
 public enum Estado {
     PENDIENTE,      // esta en la cola esperando ser atendida
     EN_PROCESO,     // un interceptor la tomo y la esta atendiendo

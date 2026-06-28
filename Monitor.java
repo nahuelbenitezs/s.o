@@ -1,39 +1,32 @@
 import java.util.concurrent.BlockingQueue;
 
 /*
- * Hilo Monitor: controla el paso del tiempo para las amenazas pendientes.
+ * Hilo Monitor: controla el paso del tiempo para las amenazas pendientes
  *
- * Cada "tick" (periodo configurable) reduce el tiempoRestante de cada
+ * Cada tick reduce el tiempoRestante de cada
  * amenaza que sigue en la cola. La reduccion ya esta ajustada por la
  * velocidad del misil dentro de Amenaza.reducirTiempo().
  *
  * Si el tiempo de una amenaza llega a cero o menos:
  *   - Intenta marcarla IMPACTADA via CAS (intentarImpactar()).
- *   - Si el CAS tiene exito: la saca de la cola y registra el impacto.
- *   - Si falla: un interceptor ya la tomo a tiempo; no se hace nada.
+ *   - Si el CAS tiene exito: la saca de la cola y registra el impacto
+ *   - Si falla: un interceptor ya la tomo a tiempo; no se hace mas nada
  *
- * DISEÑO:
- *   Iterar sobre la PriorityBlockingQueue mientras otros hilos la usan
- *   es seguro en Java (el iterador es weakly-consistent y no lanza
- *   ConcurrentModificationException). La operacion cola.remove(a) es
- *   O(n) pero con colas pequenas en la simulacion esto es aceptable.
- *
- *   No se usa synchronized en el loop del Monitor; la atomicidad de
- *   intentarImpactar() garantiza que solo un hilo gana la carrera.
+ *   La operacion cola.remove(a) es O(n) pero con colas chicas en la simulacion esto esta bien
  */
 public class Monitor extends Thread {
 
     private final BlockingQueue<Amenaza> cola;
-    private final Estadisticas           stats;
-    private final int                    tick; // ms de resolucion del reloj
+    private final Estadisticas stats;
+    private final int tick; // ms de resolucion del reloj
 
     private volatile boolean activo = true;
 
     public Monitor(BlockingQueue<Amenaza> cola, Estadisticas stats, int tick) {
         super("Monitor");
-        this.cola  = cola;
+        this.cola = cola;
         this.stats = stats;
-        this.tick  = tick;
+        this.tick = tick;
     }
 
     @Override
@@ -63,5 +56,7 @@ public class Monitor extends Thread {
         System.out.println("[Monitor] detenido.");
     }
 
-    public void detener() { activo = false; }
+    public void detener() { 
+        activo = false; 
+    }
 }

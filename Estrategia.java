@@ -52,10 +52,14 @@ public enum Estrategia {
         this.descripcion = descripcion;
     }
 
-    public String getNombre()      { return nombre;      }
-    public String getDescripcion() { return descripcion; }
+    public String getNombre() {
+        return nombre;
+    }
+    public String getDescripcion() {
+        return descripcion;
+    }
 
-    /** Imprime el menu numerado de estrategias. */
+    //Imprime el menu numerado de estrategias
     public static void imprimirMenu() {
         System.out.println("\n  Estrategias de planificacion disponibles:");
         for (Estrategia e : values()) {

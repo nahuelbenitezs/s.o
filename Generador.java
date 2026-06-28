@@ -12,32 +12,31 @@ import java.util.concurrent.BlockingQueue;
  *
  * Formato del archivo:
  *   ZONA;tiempoRestanteMs[;TIPO_MISIL]
- *   Lineas vacias o comenzadas con '#' son ignoradas.
+ *   las lineas vacias o que empiezan con '#' son ignoradas
  *   TIPO_MISIL es opcional; si se omite, se usa CONVENCIONAL.
  *
- * El generador inserta mas rapido de lo que los interceptores pueden atender
- * (configurable), lo que provoca el escenario de saturacion requerido.
+ * El generador inserta mas rapido de lo que los interceptores pueden atender, lo que provoca el escenario de saturacion
  */
 public class Generador extends Thread {
 
-    private final String              archivo;
+    private final String archivo;
     private final BlockingQueue<Amenaza> cola;
-    private final Estadisticas        stats;
-    private final long                inicioSimulacion;
-    private final int                 pausaEntreLlegadas; // ms
-    private final Estrategia          estrategia;         // para calcular prioridad al insertar
+    private final Estadisticas stats;
+    private final long inicioSimulacion;
+    private final int pausaEntreLlegadas; // ms
+    private final Estrategia estrategia; // para calcular prioridad al insertar
 
     private volatile boolean terminado = false;
 
     public Generador(String archivo, BlockingQueue<Amenaza> cola, Estadisticas stats,
                      long inicioSimulacion, int pausaEntreLlegadas, Estrategia estrategia) {
         super("Generador");
-        this.archivo             = archivo;
-        this.cola                = cola;
-        this.stats               = stats;
-        this.inicioSimulacion    = inicioSimulacion;
-        this.pausaEntreLlegadas  = pausaEntreLlegadas;
-        this.estrategia          = estrategia;
+        this.archivo = archivo;
+        this.cola = cola;
+        this.stats = stats;
+        this.inicioSimulacion = inicioSimulacion;
+        this.pausaEntreLlegadas = pausaEntreLlegadas;
+        this.estrategia = estrategia;
     }
 
     @Override
@@ -56,12 +55,12 @@ public class Generador extends Thread {
                     continue;
                 }
 
-                Zona      zona;
-                int       tiempo;
+                Zona zona;
+                int tiempo;
                 TipoMisil tipo = TipoMisil.CONVENCIONAL; // default
 
                 try {
-                    zona   = Zona.valueOf(partes[0].trim().toUpperCase());
+                    zona = Zona.valueOf(partes[0].trim().toUpperCase());
                     tiempo = Integer.parseInt(partes[1].trim());
                     if (partes.length >= 3) {
                         tipo = TipoMisil.valueOf(partes[2].trim().toUpperCase());
@@ -71,18 +70,18 @@ public class Generador extends Thread {
                     continue;
                 }
 
-                long    ahora = System.currentTimeMillis() - inicioSimulacion;
-                Amenaza a     = new Amenaza(id++, zona, tipo, tiempo, ahora);
+                long ahora = System.currentTimeMillis() - inicioSimulacion;
+                Amenaza a = new Amenaza(id++, zona, tipo, tiempo, ahora);
                 cola.put(a);
                 stats.registrarGenerada();
 
-                System.out.printf("[Generador] +++ %s  P=%.0f%n",
-                        a, a.prioridad(estrategia));
+                System.out.printf("[Generador] +++ %s  P=%.0f%n", a, a.prioridad(estrategia));
 
                 if (pausaEntreLlegadas > 0) {
                     Thread.sleep(pausaEntreLlegadas);
                 }
             }
+
         } catch (IOException e) {
             System.out.println("[Generador] ERROR leyendo archivo: " + archivo);
         } catch (InterruptedException e) {
@@ -93,5 +92,7 @@ public class Generador extends Thread {
         }
     }
 
-    public boolean isTerminado() { return terminado; }
+    public boolean isTerminado() { 
+        return terminado; 
+    }
 }
