@@ -3,7 +3,7 @@ import java.util.concurrent.Semaphore;
 /*
  * Guarda los contadores compartidos de la simulacion.
  *
- * SINCRONIZACION: semaforo binario (Semaphore(1)) como mutex.
+ * SINCRONIZACION: semaforo (Semaphore(1)) mutex
  *
  * Metricas incluidas:
  *   - generadas, interceptadas, impactadas
@@ -18,34 +18,34 @@ public class Estadisticas {
     private final Semaphore mutex = new Semaphore(1);
 
     // Contadores base
-    private int  generadas               = 0;
-    private int  interceptadas           = 0;
-    private int  impactadas              = 0;
+    private int generadas = 0;
+    private int interceptadas = 0;
+    private int impactadas = 0;
 
     // Tiempo de espera
     private long sumaEsperaInterceptadas = 0;
 
     // Metricas de danio
-    private double criticidadImpactada   = 0; // suma de criticidad de zonas impactadas
-    private double danioTotalImpactado   = 0; // criticidad * factorDanio del misil
+    private double criticidadImpactada = 0; // suma de criticidad de zonas impactadas
+    private double danioTotalImpactado = 0; // criticidad * factorDanio del misil
 
     // Utilizacion de interceptores
-    private long sumaOcupacionMs         = 0; // suma de milisegundos ocupados de todos los interceptores
-    private long inicioSimulacion        = 0;
-    private int  cantInterceptores       = 0;
+    private long sumaOcupacionMs = 0; // suma de milisegundos ocupados de todos los interceptores
+    private long inicioSimulacion = 0;
+    private int  cantInterceptores = 0;
 
     // Nombre de la estrategia actual
-    private String nombreEstrategia      = "";
+    private String nombreEstrategia = "";
 
     // Fin de la simulacion
-    private long finSimulacion           = 0;
+    private long finSimulacion = 0;
 
     public void setConfiguracion(long inicioSimulacion, int cantInterceptores, String nombreEstrategia) {
         try {
             mutex.acquire();
-            this.inicioSimulacion    = inicioSimulacion;
-            this.cantInterceptores   = cantInterceptores;
-            this.nombreEstrategia    = nombreEstrategia;
+            this.inicioSimulacion = inicioSimulacion;
+            this.cantInterceptores = cantInterceptores;
+            this.nombreEstrategia = nombreEstrategia;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
@@ -87,7 +87,7 @@ public class Estadisticas {
             mutex.acquire();
             interceptadas++;
             sumaEsperaInterceptadas += tiempoEsperaMs;
-            sumaOcupacionMs         += tiempoOcupacionMs;
+            sumaOcupacionMs += tiempoOcupacionMs;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
@@ -100,7 +100,7 @@ public class Estadisticas {
             mutex.acquire();
             impactadas++;
             criticidadImpactada += criticidad;
-            danioTotalImpactado  += danioEfectivo;
+            danioTotalImpactado += danioEfectivo;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
