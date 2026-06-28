@@ -99,8 +99,8 @@ public class Interceptor extends Thread {
             long retorno = tFin - a.getInstanteLlegada();
             stats.registrarInterceptada(espera, retorno);
 
-            recursos.release();                // libera el recurso
-            confirmacion.release();            // avisa al Despachador
+            recursos.release();     // libera el recurso
+            confirmacion.release(); // avisa al Despachador
         }
     }
 }

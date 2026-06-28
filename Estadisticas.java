@@ -1,3 +1,4 @@
+
 import java.util.concurrent.Semaphore;
 
 /*
@@ -17,7 +18,9 @@ public class Estadisticas {
     private int criticidadImpactada = 0;          // suma de criticidad de las impactadas
 
     public void registrarGenerada() {
-        if (!tomar()) return;
+        if (!tomar()) {
+            return;
+        }
         try {
             generadas++;
         } finally {
@@ -26,7 +29,9 @@ public class Estadisticas {
     }
 
     public void registrarInterceptada(long espera, long retorno) {
-        if (!tomar()) return;
+        if (!tomar()) {
+            return;
+        }
         try {
             interceptadas++;
             sumaEsperaInterceptadas += espera;
@@ -37,7 +42,9 @@ public class Estadisticas {
     }
 
     public void registrarImpactada(int criticidad) {
-        if (!tomar()) return;
+        if (!tomar()) {
+            return;
+        }
         try {
             impactadas++;
             criticidadImpactada += criticidad;
@@ -57,13 +64,27 @@ public class Estadisticas {
         }
     }
 
-    public int getGeneradas() { return generadas; }
-    public int getInterceptadas() { return interceptadas; }
-    public int getImpactadas() { return impactadas; }
-    public int getCriticidadImpactada() { return criticidadImpactada; }
+    public int getGeneradas() {
+        return generadas; 
+        
+    
+
+    public int getInterceptadas() {
+        return interceptadas;
+    }
+
+    public int getImpactadas() {
+        return impactadas;
+    }
+
+    public int getCriticidadImpactada() {
+        return criticidadImpactada;
+    }
+
     public long getEsperaPromedio() {
         return interceptadas > 0 ? sumaEsperaInterceptadas / interceptadas : 0;
     }
+
     public long getRetornoPromedio() {
         return interceptadas > 0 ? sumaRetornoInterceptadas / interceptadas : 0;
     }
@@ -71,7 +92,7 @@ public class Estadisticas {
     // resumen final: cantidades, espera, retorno, throughput, utilizacion y criticidad
     public void imprimirResumen(Interceptor[] interceptores, long tFin) {
         System.out.println();
-        System.out.println("========== RESUMEN DE LA SIMULACION ==========");
+        System.out.println("RESUMEN DE LA SIMULACION");
         System.out.println("Amenazas generadas    : " + generadas);
         System.out.println("Amenazas interceptadas: " + interceptadas);
         System.out.println("Amenazas impactadas   : " + impactadas);
@@ -107,6 +128,5 @@ public class Estadisticas {
 
         System.out.println("Criticidad total impactada: " + criticidadImpactada
                 + "  (suma de la criticidad de las zonas que recibieron impacto)");
-        System.out.println("==============================================");
     }
 }

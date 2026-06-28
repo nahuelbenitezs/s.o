@@ -23,8 +23,7 @@ public class Generador extends Thread {
 
     private volatile boolean terminado = false;
 
-    public Generador(String archivo, ColaLlegadas cola, Estadisticas stats,
-                     int pausaEntreLlegadas, boolean verbose) {
+    public Generador(String archivo, ColaLlegadas cola, Estadisticas stats, int pausaEntreLlegadas, boolean verbose) {
         super("Generador");
         this.archivo = archivo;
         this.cola = cola;
