@@ -1,72 +1,114 @@
 # Sistema concurrente de intercepción de amenazas aéreas
 
-Primera versión ejecutable (Segundo Avance) — Sistemas Operativos, UCU 2026.
+Sistemas Operativos — UCU 2026. Versión con **despachador central** (rediseño para
+la entrega final).
 
 ## Cómo compilar y ejecutar
 
-Necesitás tener instalado el **JDK** (Java 11 o superior). Verificá con:
-
-```
-java -version
-javac -version
-```
-
-Si no lo tenés, instalá un JDK (por ejemplo Temurin/Adoptium o el de Oracle).
-
-Parado en la carpeta `codigo/`:
+Necesitás el **JDK** (Java 8 o superior):
 
 ```
 javac *.java
-java Simulador amenazas.txt
+java Simulador
 ```
 
-También se pueden pasar parámetros opcionales (archivo, cantidad de
-interceptores, tiempo de recarga en ms):
+### Parámetros
 
 ```
-java Simulador amenazas.txt 2 1000
+java Simulador [archivo] [N] [recargaMs] [estrategia]
 ```
 
-## Qué hace
+- **archivo**: escenario de amenazas (default `amenazas.txt`).
+- **N**: cantidad de interceptores (default 2).
+- **recargaMs**: tiempo fijo de recarga/servicio (default 1000).
+- **estrategia**:
+  - `1` = Prioridades (Event-Driven) con envejecimiento *(default)*
+  - `2` = MLQ — Colas de Múltiples Niveles (3 colas)
+  - `3` = EDF no apropiativo (menor tiempo hasta el impacto)
 
-- **1 hilo Generador**: lee `amenazas.txt` y deposita amenazas en la cola.
-- **N hilos Interceptor**: compiten por tomar amenazas de la cola compartida y
-  las atienden durante un tiempo fijo de recarga.
-- **1 hilo Monitor**: hace correr el tiempo; si a una amenaza pendiente se le
-  agota el tiempo, la marca como **impactada**.
+### Comparación automática (modo batch)
 
-Recurso compartido: una `PriorityBlockingQueue` ordenada por la prioridad del
-Primer Avance: `P = criticidad*100 + (1000 - tiempoRestante)`.
+```
+java Simulador batch amenazas.txt
+java Simulador batch amenazas_critico.txt
+```
 
-Sincronización: semáforo binario (`Semaphore(1)`) protegiendo los contadores en
-`Estadisticas`, y variables atómicas (`AtomicReference` con `compareAndSet`) en
-`Amenaza` para las transiciones de estado, sin usar `synchronized` (evitan
-condiciones de carrera entre interceptores y monitor de forma lock-free).
+Corre todas las estrategias × varios tiempos de recarga e imprime una tabla
+comparativa (generadas, interceptadas, impactadas, espera, tasa, criticidad
+impactada y utilización).
 
-Al terminar imprime un resumen: generadas, interceptadas, impactadas, tiempo
-promedio de espera, criticidad total impactada y tasa de interceptación.
+## Arquitectura
 
-## Escenario de prueba (saturación)
+Despachador central con reloj virtual (simulación por eventos discretos):
 
-Con 2 interceptores y 1000 ms de recarga, el sistema atiende ~2 amenazas por
-segundo, pero llegan ~4 por segundo. Eso provoca **saturación**: la cola se
-acumula y varias amenazas impactan. Así se ve que la planificación por
-prioridad importa (los hospitales y centrales se atienden antes que la zona
-industrial). Para comparar, se puede subir la cantidad de interceptores o el
-tiempo de recarga y ver cómo cambian las métricas.
+- **1 hilo Generador** (productor): lee el archivo y deposita las llegadas en una
+  cola compartida. Sincroniza con el despachador mediante **Productor-Consumidor
+  con semáforos** (`mutex` + semáforo contador `items`).
+- **1 hilo Despachador** (consumidor + planificador): decide a qué amenaza atender
+  (según la estrategia) y le entrega el trabajo a un interceptor libre. Es el único
+  que adelanta el reloj y el único que imprime, por lo que la salida queda
+  **ordenada en el tiempo** y la simulación es **determinista**.
+- **N hilos Interceptor** (recursos): cada interceptor es un hilo propio que espera
+  una asignación, ejecuta la recarga y, al terminar, **libera** (`release()`) el
+  semáforo contador `Semaphore(N)`. El Despachador **reserva** un permiso con
+  `tryAcquire()` (no bloqueante) al asignar y cada Interceptor lo libera al
+  terminar. Las amenazas compiten por una capacidad limitada de N recursos; el
+  Despachador resuelve esa competencia con la estrategia y asigna el trabajo a uno
+  de los N hilos Interceptor (como el Ejercicio 4 "Datacenter" del curso).
 
-## Limitaciones conocidas (a mejorar para la entrega final)
+El tiempo avanza por **eventos** (llegada, fin de servicio, impacto): el reloj
+salta al próximo evento, **sin `Thread.sleep`**.
 
-Esta es una primera versión pensada para demostrar que el camino es correcto;
-quedan cosas por pulir:
+### Sincronización (mecanismos vistos en clase)
 
-- **Una sola estrategia de planificación** implementada (la fórmula combinada).
-  La letra pide al menos dos para comparar; se agregarán (ej.: solo por menor
-  tiempo restante, solo por criticidad) y un menú para elegirla.
-- La prioridad usa `tiempoRestante`, que el Monitor va modificando. La
-  `PriorityBlockingQueue` no reordena automáticamente al cambiar ese valor; el
-  orden se fija al insertar. Para la versión final se evaluará recalcular el
-  orden o usar otra estructura.
-- El Monitor usa un *busy-wait* simple con `sleep` en lugar de variables de
-  condición más finas.
-- El fin de la simulación se detecta por sondeo (polling) cada 100 ms.
+- **Semáforo contador `Semaphore(N)`** para los recursos de intercepción
+  (`tryAcquire()` por el Despachador, `release()` por cada Interceptor).
+- **Productor-Consumidor con semáforos** entre Generador y Despachador.
+- **Sección crítica con semáforo binario (mutex)** para los contadores de
+  estadísticas (los escriben Generador, Interceptores y Despachador).
+- En Java: `java.util.concurrent.Semaphore` con `acquire()` (= `P`/`Wait`) y
+  `release()` (= `V`/`Signal`).
+
+## Formato del archivo de escenario
+
+```
+ZONA;tiempoRestanteMs[;instanteLlegadaMs]
+```
+
+- Zonas válidas: `HOSPITAL`, `CENTRAL_ELECTRICA`, `DATACENTER`, `RESIDENCIAL`,
+  `INDUSTRIAL`.
+- El tercer campo (instante de llegada, en ms virtuales) es **opcional**; si no
+  está, se calcula como `índice * 250 ms`.
+- Las líneas vacías o que empiezan con `#` se ignoran.
+
+Hay dos escenarios: `amenazas.txt` (general) y `amenazas_critico.txt` (diseñado
+para comparar estrategias: muestra cómo EDF sacrifica zonas críticas que la
+prioridad por criticidad protege).
+
+## Fórmula de prioridad
+
+```
+P = criticidad * 10000 + (5000 - tiempoRestante) + envejecimiento
+```
+
+El factor `10000` (≥ rango de la urgencia) hace que la **criticidad domine** sobre
+la urgencia. El **envejecimiento** reduce el riesgo de inanición (sobre todo entre
+amenazas de igual criticidad). La prioridad se **recalcula en cada decisión**.
+
+## Estrategias
+
+| # | Nombre | Detalle |
+|---|--------|---------|
+| 1 | Prioridades (Event-Driven) con envejecimiento | fórmula combinada |
+| 2 | MLQ (3 colas) | ALTA = EDF, MEDIA = FCFS, BAJA = rotación circular |
+| 3 | EDF no apropiativo | menor tiempo hasta el impacto (deadline), sin criticidad |
+
+> Nota: la estrategia 3 es **EDF** (Earliest Deadline First), no SRTN: el tiempo de
+> servicio (la recarga) es igual para todas; lo que varía es el plazo hasta el
+> impacto, que es un *deadline*.
+
+## Estadísticas
+
+Generadas, interceptadas, impactadas, tiempo promedio de espera y de retorno
+(turnaround), tasa de interceptación, throughput, **utilización de los
+interceptores** y **criticidad total impactada**.

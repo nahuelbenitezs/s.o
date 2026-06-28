@@ -1,0 +1,28 @@
+# Escenario DISCRIMINANTE - disenado para comparar estrategias de planificacion.
+# Formato:  ZONA;tiempoRestanteMs;instanteLlegadaMs
+#
+# Idea: las amenazas a zonas CRITICAS (hospital, central) llegan con bastante
+# tiempo (1900 ms), mientras que las de zonas de BAJA criticidad llegan URGENTES
+# (1000 ms). Con N=2 y recarga=1000 el sistema esta saturado: solo se pueden
+# interceptar 4 de 10, asi que la estrategia decide CUALES se salvan.
+#
+#   - SRTN puro (solo urgencia) atiende primero las urgentes (las de baja
+#     criticidad) y deja que IMPACTEN 2 HOSPITALES.
+#   - La estrategia por criticidad (Prioridades / MLQ) protege a los hospitales
+#     y centrales: misma cantidad interceptada, pero MENOR criticidad impactada.
+#
+# Se ve claramente al correr:
+#   java Simulador amenazas_critico.txt 2 1000 1   (criticidad: salva hospitales)
+#   java Simulador amenazas_critico.txt 2 1000 3   (SRTN: sacrifica hospitales)
+#   java Simulador batch amenazas_critico.txt
+
+INDUSTRIAL;1000;0
+HOSPITAL;1900;0
+INDUSTRIAL;1000;250
+CENTRAL_ELECTRICA;1900;250
+RESIDENCIAL;1000;500
+HOSPITAL;1900;500
+INDUSTRIAL;1000;750
+CENTRAL_ELECTRICA;1900;750
+RESIDENCIAL;1000;1000
+HOSPITAL;1900;1000

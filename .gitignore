@@ -1,0 +1,6 @@
+# Material de estudio y entregables: no van al repo de codigo
+*.pdf
+*.docx
+
+# Compilados de Java
+*.class

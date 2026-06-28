@@ -1,54 +1,79 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /*
- * Hilo Lector / Generador de amenazas.
+ * Hilo Generador (productor). Lee el archivo de escenario y deposita las amenazas
+ * como eventos de llegada en la ColaLlegadas.
  *
- * Lee el archivo de texto (una amenaza por linea, formato "ZONA;tiempoMs")
- * y va depositando las amenazas en la cola compartida, con una pequena pausa
- * entre cada una para simular que llegan durante la simulacion.
- *
- * Inserta mas rapido de lo que el sistema puede atender, para provocar el
- * escenario de SATURACION que pide la letra.
+ * Formato del archivo:  ZONA;tiempoRestanteMs[;instanteLlegadaMs]
+ * El instante de llegada es opcional; si no esta, se usa indice * pausaEntreLlegadas.
  */
 public class Generador extends Thread {
 
     private final String archivo;
-    private final BlockingQueue<Amenaza> cola;
+    private final ColaLlegadas cola;
     private final Estadisticas stats;
-    private final long inicioSimulacion;
-    private final int pausaEntreLlegadas; // ms entre una amenaza y la siguiente
+    private final int pausaEntreLlegadas;
+    private final boolean verbose;
 
     private volatile boolean terminado = false;
 
-    public Generador(String archivo, BlockingQueue<Amenaza> cola, Estadisticas stats,
-                     long inicioSimulacion, int pausaEntreLlegadas) {
+    public Generador(String archivo, ColaLlegadas cola, Estadisticas stats,
+                     int pausaEntreLlegadas, boolean verbose) {
         super("Generador");
         this.archivo = archivo;
         this.cola = cola;
         this.stats = stats;
-        this.inicioSimulacion = inicioSimulacion;
         this.pausaEntreLlegadas = pausaEntreLlegadas;
+        this.verbose = verbose;
     }
 
     @Override
     public void run() {
+        List<Amenaza> amenazas = leerArchivo();
+
+        // se entregan en orden de llegada
+        Collections.sort(amenazas, new Comparator<Amenaza>() {
+            public int compare(Amenaza a, Amenaza b) {
+                int cmp = Long.compare(a.getInstanteLlegada(), b.getInstanteLlegada());
+                return (cmp != 0) ? cmp : Integer.compare(a.getId(), b.getId());
+            }
+        });
+
+        long seq = 0;
+        for (Amenaza a : amenazas) {
+            cola.poner(new Evento(Evento.Tipo.LLEGADA, a.getInstanteLlegada(), a, null, seq++));
+            stats.registrarGenerada();
+        }
+
+        terminado = true;
+        cola.cerrar();
+        if (verbose) {
+            System.out.println("[Generador] Termino de generar " + amenazas.size() + " amenazas.");
+        }
+    }
+
+    private List<Amenaza> leerArchivo() {
+        List<Amenaza> amenazas = new ArrayList<>();
         int id = 1;
+        int indice = 0;
         try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
             String linea;
             while ((linea = br.readLine()) != null) {
                 linea = linea.trim();
                 if (linea.isEmpty() || linea.startsWith("#")) {
-                    continue; // ignora lineas vacias o comentarios
+                    continue;
                 }
                 String[] partes = linea.split(";");
-                if (partes.length != 2) {
+                if (partes.length < 2) {
                     System.out.println("[Generador] Linea ignorada (formato invalido): " + linea);
                     continue;
                 }
-
                 Zona zona;
                 int tiempo;
                 try {
@@ -58,23 +83,19 @@ public class Generador extends Thread {
                     System.out.println("[Generador] Linea ignorada (dato invalido): " + linea);
                     continue;
                 }
-
-                long ahora = System.currentTimeMillis() - inicioSimulacion;
-                Amenaza a = new Amenaza(id++, zona, tiempo, ahora);
-                cola.put(a);
-                stats.registrarGenerada();
-                System.out.println("[Generador] Llega " + a);
-
-                Thread.sleep(pausaEntreLlegadas);
+                long llegada;
+                if (partes.length >= 3) {
+                    llegada = Long.parseLong(partes[2].trim());
+                } else {
+                    llegada = (long) indice * pausaEntreLlegadas;
+                }
+                amenazas.add(new Amenaza(id++, zona, tiempo, llegada));
+                indice++;
             }
         } catch (IOException e) {
             System.out.println("[Generador] No se pudo leer el archivo: " + archivo);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } finally {
-            terminado = true;
-            System.out.println("[Generador] Termino de generar amenazas.");
         }
+        return amenazas;
     }
 
     public boolean isTerminado() {

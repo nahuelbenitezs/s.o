@@ -1,98 +1,61 @@
-import java.util.concurrent.atomic.AtomicReference;
-
 /*
- * Representa una amenaza aerea entrante.
- *
- * Guarda los datos minimos pedidos en la letra: identificador, zona objetivo,
- * instante de aparicion, tiempo restante hasta el impacto y estado.
- *
- * La prioridad se calcula con la formula definida en el Primer Avance:
- *      P = (Criticidad x 100) + (1000 - TiempoRestante)
- *
- * El estado se guarda en un AtomicReference. Las transiciones criticas se
- * hacen con compareAndSet (CAS): es una operacion atomica y "lock-free"
- * (sin synchronized). Esto resuelve la condicion de carrera entre el
- * interceptor (PENDIENTE -> EN_PROCESO) y el monitor (PENDIENTE -> IMPACTADA):
- * cuando ambos compiten, solo uno obtiene true.
+ * Una amenaza aerea que va dirigida a una zona.
+ * Guarda id, zona, instante de llegada, instante de impacto y estado.
  */
 public class Amenaza {
 
     private final int id;
     private final Zona zona;
-    private final long instanteAparicion;   // milisegundos desde el inicio
-    private volatile int tiempoRestante;     // ms hasta el impacto (lo baja el Monitor)
-    private final AtomicReference<Estado> estado =
-            new AtomicReference<>(Estado.PENDIENTE);
+    private final long instanteLlegada;      // ms en que aparece
+    private final int tiempoRestanteInicial; // ms hasta el impacto al aparecer
+    private final long instanteImpacto;      // = llegada + tiempoRestanteInicial
 
-    public Amenaza(int id, Zona zona, int tiempoRestante, long instanteAparicion) {
+    private Estado estado = Estado.PENDIENTE;
+    private long instanteInicioServicio = -1;
+    private long instanteFinServicio = -1;
+    private int interceptorAsignado = -1;
+
+    public Amenaza(int id, Zona zona, int tiempoRestanteInicial, long instanteLlegada) {
         this.id = id;
         this.zona = zona;
-        this.tiempoRestante = tiempoRestante;
-        this.instanteAparicion = instanteAparicion;
+        this.tiempoRestanteInicial = tiempoRestanteInicial;
+        this.instanteLlegada = instanteLlegada;
+        this.instanteImpacto = instanteLlegada + tiempoRestanteInicial;
     }
 
-    /*
-     * Formula de prioridad del Primer Avance.
-     * Un valor mas alto = mayor prioridad de atencion.
-     */
-    public int prioridad() {
-        return (zona.getCriticidad() * 100) + (1000 - tiempoRestante);
+    // ms que le quedan hasta el impacto en el instante tNow
+    public int tiempoRestanteEn(long tNow) {
+        return (int) (instanteImpacto - tNow);
     }
 
-    /*
-     * Un interceptor intenta "tomar" la amenaza. Solo lo logra si todavia
-     * estaba PENDIENTE. compareAndSet hace la comparacion y el cambio en un
-     * solo paso atomico. Devuelve true si la pudo reclamar.
-     */
-    public boolean intentarTomar() {
-        return estado.compareAndSet(Estado.PENDIENTE, Estado.EN_PROCESO);
+    // P = criticidad*10000 + (5000 - tiempoRestante). Se usa para mostrar en el log.
+    public int prioridad(long tNow) {
+        final int K = 10000;
+        final int TMAX = 5000;
+        return (zona.getCriticidad() * K) + (TMAX - tiempoRestanteEn(tNow));
     }
 
-    /*
-     * El interceptor marca la amenaza como interceptada con exito.
-     * Aca no hay competencia: la amenaza ya esta EN_PROCESO y solo el
-     * interceptor que la tomo llega a este punto.
-     */
-    public void marcarInterceptada() {
-        estado.set(Estado.INTERCEPTADA);
-    }
+    public int getId() { return id; }
+    public Zona getZona() { return zona; }
+    public long getInstanteLlegada() { return instanteLlegada; }
+    public long getInstanteImpacto() { return instanteImpacto; }
+    public int getTiempoRestanteInicial() { return tiempoRestanteInicial; }
 
-    /*
-     * El Monitor intenta marcarla como impactada. Solo lo logra si seguia
-     * PENDIENTE (si ya estaba EN_PROCESO, se considera atendida a tiempo y
-     * el compareAndSet falla devolviendo false).
-     */
-    public boolean intentarImpactar() {
-        return estado.compareAndSet(Estado.PENDIENTE, Estado.IMPACTADA);
-    }
+    public Estado getEstado() { return estado; }
+    public void setEstado(Estado e) { this.estado = e; }
 
-    public Estado getEstado() {
-        return estado.get();
-    }
+    public long getInstanteInicioServicio() { return instanteInicioServicio; }
+    public void setInstanteInicioServicio(long t) { this.instanteInicioServicio = t; }
 
-    public void reducirTiempo(int ms) {
-        tiempoRestante -= ms;
-    }
+    public long getInstanteFinServicio() { return instanteFinServicio; }
+    public void setInstanteFinServicio(long t) { this.instanteFinServicio = t; }
 
-    public int getTiempoRestante() {
-        return tiempoRestante;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public Zona getZona() {
-        return zona;
-    }
-
-    public long getInstanteAparicion() {
-        return instanteAparicion;
-    }
+    public int getInterceptorAsignado() { return interceptorAsignado; }
+    public void setInterceptorAsignado(int n) { this.interceptorAsignado = n; }
 
     @Override
     public String toString() {
         return "Amenaza#" + id + " [" + zona + ", crit=" + zona.getCriticidad()
-                + ", t=" + tiempoRestante + "ms, P=" + prioridad() + "]";
+                + ", llega=" + instanteLlegada + "ms, impacta=" + instanteImpacto + "ms]";
     }
 }
