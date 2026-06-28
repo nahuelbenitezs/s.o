@@ -55,8 +55,8 @@ Despachador central con reloj virtual (simulación por eventos discretos):
   Despachador resuelve esa competencia con la estrategia y asigna el trabajo a uno
   de los N hilos Interceptor (como el Ejercicio 4 "Datacenter" del curso).
 
-El tiempo avanza por **eventos** (llegada, fin de servicio, impacto): el reloj
-salta al próximo evento, **sin `Thread.sleep`**.
+El tiempo avanza por eventos (llegada, fin de servicio, impacto): el reloj
+salta al próximo evento, sin `Thread.sleep`.
 
 ### Sincronización (mecanismos vistos en clase)
 
