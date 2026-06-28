@@ -1,7 +1,6 @@
 # Sistema concurrente de intercepción de amenazas aéreas
 
-Sistemas Operativos — UCU 2026. Versión con **despachador central** (rediseño para
-la entrega final).
+Sistemas Operativos.
 
 ## Cómo compilar y ejecutar
 
@@ -22,18 +21,18 @@ java Simulador [archivo] [N] [recargaMs] [estrategia]
 - **N**: cantidad de interceptores (default 2).
 - **recargaMs**: tiempo fijo de recarga/servicio (default 1000).
 - **estrategia**:
-  - `1` = Prioridades (Event-Driven) con envejecimiento *(default)*
+  - `1` = Prioridades (Event-Driven) con envejecimiento (default)
   - `2` = MLQ — Colas de Múltiples Niveles (3 colas)
   - `3` = EDF no apropiativo (menor tiempo hasta el impacto)
 
-### Comparación automática (modo batch)
+### Comparación automática
 
 ```
 java Simulador batch amenazas.txt
 java Simulador batch amenazas_critico.txt
 ```
 
-Corre todas las estrategias × varios tiempos de recarga e imprime una tabla
+Corre todas las estrategias por varios tiempos de recarga e imprime una tabla
 comparativa (generadas, interceptadas, impactadas, espera, tasa, criticidad
 impactada y utilización).
 
@@ -77,7 +76,7 @@ ZONA;tiempoRestanteMs[;instanteLlegadaMs]
 
 - Zonas válidas: `HOSPITAL`, `CENTRAL_ELECTRICA`, `DATACENTER`, `RESIDENCIAL`,
   `INDUSTRIAL`.
-- El tercer campo (instante de llegada, en ms virtuales) es **opcional**; si no
+- El tercer campo (instante de llegada, en ms virtuales) es opcional; si no
   está, se calcula como `índice * 250 ms`.
 - Las líneas vacías o que empiezan con `#` se ignoran.
 
@@ -103,9 +102,6 @@ amenazas de igual criticidad). La prioridad se **recalcula en cada decisión**.
 | 2 | MLQ (3 colas) | ALTA = EDF, MEDIA = FCFS, BAJA = rotación circular |
 | 3 | EDF no apropiativo | menor tiempo hasta el impacto (deadline), sin criticidad |
 
-> Nota: la estrategia 3 es **EDF** (Earliest Deadline First), no SRTN: el tiempo de
-> servicio (la recarga) es igual para todas; lo que varía es el plazo hasta el
-> impacto, que es un *deadline*.
 
 ## Estadísticas
 
