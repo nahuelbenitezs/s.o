@@ -1,0 +1,19 @@
+# Escenario 4: Caso limite - 1 solo interceptor, recarga 1500ms
+# Con 8 amenazas llegando cada 200ms y solo 1 interceptor lento,
+# el sistema puede atender como maximo 5 en el tiempo total de simulacion.
+# Las 3 amenazas "menos prioritarias" deben impactar en zonas industriales.
+# Ejecutar con: java Simulador escenario_borde_limite.txt 1 1500
+#
+# Verifica que la eleccion de estrategia tiene impacto concreto:
+# - MENOR_TIEMPO: salva las 5 mas urgentes (posiblemente industriales)
+# - MAYOR_CRITICIDAD: salva los 3 hospitales + las 2 mas criticas restantes
+# - DANIO_ESPERADO: similar a criticidad pero con peso en tipo de misil
+
+HOSPITAL;3000;BALISTICO
+INDUSTRIAL;800;CONVENCIONAL
+HOSPITAL;3200;HIPERSONICO
+RESIDENCIAL;900;CONVENCIONAL
+CENTRAL_ELECTRICA;3500;BALISTICO
+INDUSTRIAL;700;CONVENCIONAL
+HOSPITAL;4000;CRUCERO
+RESIDENCIAL;1100;CONVENCIONAL

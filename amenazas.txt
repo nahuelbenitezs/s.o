@@ -1,19 +1,18 @@
-# Escenario de prueba - Sistema de interceptacion de amenazas aereas
-# Formato:  ZONA;tiempoRestanteMs
-# Zonas validas: HOSPITAL, CENTRAL_ELECTRICA, DATACENTER, RESIDENCIAL, INDUSTRIAL
-#
-# Este escenario fuerza SATURACION: llegan 12 amenazas mas rapido de lo que
-# 2 interceptores (con 1000ms de recarga) pueden atender, asi varias impactan.
+# Escenario 1: Saturacion con amenazas mixtas
+# Formato: ZONA;tiempoRestanteMs[;TIPO_MISIL]
+# 12 amenazas, 2 interceptores, recarga 1000ms -> saturacion garantizada
+# Llegan cada 250ms aprox, se atienden cada 500ms (entre 2 interceptores).
+# Las estrategias diferiran en cuales se salvan y cuales impactan.
 
-INDUSTRIAL;2000
-RESIDENCIAL;2500
-HOSPITAL;1500
-DATACENTER;3000
-CENTRAL_ELECTRICA;1800
-INDUSTRIAL;1200
-HOSPITAL;2200
-RESIDENCIAL;1000
-CENTRAL_ELECTRICA;2600
-DATACENTER;1400
-HOSPITAL;3000
-INDUSTRIAL;900
+INDUSTRIAL;2000;CONVENCIONAL
+RESIDENCIAL;2500;CONVENCIONAL
+HOSPITAL;1500;HIPERSONICO
+DATACENTER;3000;CONVENCIONAL
+CENTRAL_ELECTRICA;1800;BALISTICO
+INDUSTRIAL;1200;CONVENCIONAL
+HOSPITAL;2200;CRUCERO
+RESIDENCIAL;1000;CONVENCIONAL
+CENTRAL_ELECTRICA;2600;HIPERSONICO
+DATACENTER;1400;BALISTICO
+HOSPITAL;3000;CONVENCIONAL
+INDUSTRIAL;900;HIPERSONICO

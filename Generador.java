@@ -4,33 +4,40 @@ import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 
 /*
- * Hilo Lector / Generador de amenazas.
+ * Hilo Generador / Lector de amenazas.
  *
- * Lee el archivo de texto (una amenaza por linea, formato "ZONA;tiempoMs")
- * y va depositando las amenazas en la cola compartida, con una pequena pausa
- * entre cada una para simular que llegan durante la simulacion.
+ * Lee el archivo de escenario linea a linea y deposita las amenazas en la
+ * cola compartida, con una pausa configurable entre llegadas para simular
+ * la llegada temporal de los eventos.
  *
- * Inserta mas rapido de lo que el sistema puede atender, para provocar el
- * escenario de SATURACION que pide la letra.
+ * Formato del archivo:
+ *   ZONA;tiempoRestanteMs[;TIPO_MISIL]
+ *   Lineas vacias o comenzadas con '#' son ignoradas.
+ *   TIPO_MISIL es opcional; si se omite, se usa CONVENCIONAL.
+ *
+ * El generador inserta mas rapido de lo que los interceptores pueden atender
+ * (configurable), lo que provoca el escenario de saturacion requerido.
  */
 public class Generador extends Thread {
 
-    private final String archivo;
+    private final String              archivo;
     private final BlockingQueue<Amenaza> cola;
-    private final Estadisticas stats;
-    private final long inicioSimulacion;
-    private final int pausaEntreLlegadas; // ms entre una amenaza y la siguiente
+    private final Estadisticas        stats;
+    private final long                inicioSimulacion;
+    private final int                 pausaEntreLlegadas; // ms
+    private final Estrategia          estrategia;         // para calcular prioridad al insertar
 
     private volatile boolean terminado = false;
 
     public Generador(String archivo, BlockingQueue<Amenaza> cola, Estadisticas stats,
-                     long inicioSimulacion, int pausaEntreLlegadas) {
+                     long inicioSimulacion, int pausaEntreLlegadas, Estrategia estrategia) {
         super("Generador");
-        this.archivo = archivo;
-        this.cola = cola;
-        this.stats = stats;
-        this.inicioSimulacion = inicioSimulacion;
-        this.pausaEntreLlegadas = pausaEntreLlegadas;
+        this.archivo             = archivo;
+        this.cola                = cola;
+        this.stats               = stats;
+        this.inicioSimulacion    = inicioSimulacion;
+        this.pausaEntreLlegadas  = pausaEntreLlegadas;
+        this.estrategia          = estrategia;
     }
 
     @Override
@@ -41,43 +48,50 @@ public class Generador extends Thread {
             while ((linea = br.readLine()) != null) {
                 linea = linea.trim();
                 if (linea.isEmpty() || linea.startsWith("#")) {
-                    continue; // ignora lineas vacias o comentarios
+                    continue;
                 }
                 String[] partes = linea.split(";");
-                if (partes.length != 2) {
+                if (partes.length < 2) {
                     System.out.println("[Generador] Linea ignorada (formato invalido): " + linea);
                     continue;
                 }
 
-                Zona zona;
-                int tiempo;
+                Zona      zona;
+                int       tiempo;
+                TipoMisil tipo = TipoMisil.CONVENCIONAL; // default
+
                 try {
-                    zona = Zona.valueOf(partes[0].trim().toUpperCase());
+                    zona   = Zona.valueOf(partes[0].trim().toUpperCase());
                     tiempo = Integer.parseInt(partes[1].trim());
+                    if (partes.length >= 3) {
+                        tipo = TipoMisil.valueOf(partes[2].trim().toUpperCase());
+                    }
                 } catch (IllegalArgumentException e) {
                     System.out.println("[Generador] Linea ignorada (dato invalido): " + linea);
                     continue;
                 }
 
-                long ahora = System.currentTimeMillis() - inicioSimulacion;
-                Amenaza a = new Amenaza(id++, zona, tiempo, ahora);
+                long    ahora = System.currentTimeMillis() - inicioSimulacion;
+                Amenaza a     = new Amenaza(id++, zona, tipo, tiempo, ahora);
                 cola.put(a);
                 stats.registrarGenerada();
-                System.out.println("[Generador] Llega " + a);
 
-                Thread.sleep(pausaEntreLlegadas);
+                System.out.printf("[Generador] +++ %s  P=%.0f%n",
+                        a, a.prioridad(estrategia));
+
+                if (pausaEntreLlegadas > 0) {
+                    Thread.sleep(pausaEntreLlegadas);
+                }
             }
         } catch (IOException e) {
-            System.out.println("[Generador] No se pudo leer el archivo: " + archivo);
+            System.out.println("[Generador] ERROR leyendo archivo: " + archivo);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
             terminado = true;
-            System.out.println("[Generador] Termino de generar amenazas.");
+            System.out.println("[Generador] Fin de generacion de amenazas.");
         }
     }
 
-    public boolean isTerminado() {
-        return terminado;
-    }
+    public boolean isTerminado() { return terminado; }
 }

@@ -1,0 +1,12 @@
+# Escenario 2: Caso borde - solo zonas criticas, tiempos muy cortos
+# Objetivo: verificar que la estrategia MAYOR_CRITICIDAD y DANIO_ESPERADO
+# priorizan hospitales y centrales correctamente bajo presion extrema.
+# Con 2 interceptores y recarga 1000ms, solo 2 de 6 se pueden atender.
+# La estrategia correcta deberia salvar los 2 hospitales.
+
+HOSPITAL;800;BALISTICO
+HOSPITAL;900;HIPERSONICO
+CENTRAL_ELECTRICA;700;BALISTICO
+CENTRAL_ELECTRICA;1100;CONVENCIONAL
+DATACENTER;600;CONVENCIONAL
+DATACENTER;1200;CRUCERO

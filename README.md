@@ -1,72 +1,76 @@
-# Sistema concurrente de intercepción de amenazas aéreas
+# Sistema Concurrente de Intercepcion de Amenazas Aereas
+**Sistemas Operativos — UCU 2026 — Entrega Final**
 
-Primera versión ejecutable (Segundo Avance) — Sistemas Operativos, UCU 2026.
+Integrantes: María Belén Mendes · Nahuel Benítez · Franco Di Salvatore
 
-## Cómo compilar y ejecutar
+---
 
-Necesitás tener instalado el **JDK** (Java 11 o superior). Verificá con:
+## Compilacion y ejecucion
 
-```
-java -version
-javac -version
-```
+Requiere **JDK 11 o superior**. Verificar con `java -version` y `javac -version`.
 
-Si no lo tenés, instalá un JDK (por ejemplo Temurin/Adoptium o el de Oracle).
-
-Parado en la carpeta `codigo/`:
-
-```
+```bash
+# Compilar todos los fuentes
 javac *.java
-java Simulador amenazas.txt
+
+# Modo interactivo (menu de escenarios y estrategias)
+java Simulador
+
+# Modo directo: archivo, interceptores, recarga, estrategia (1-4)
+java Simulador amenazas.txt 2 1000 3
+
+# Modo batch: ejecuta las 4 estrategias y muestra tabla comparativa
+java Simulador amenazas.txt 2 1000 --batch
 ```
 
-También se pueden pasar parámetros opcionales (archivo, cantidad de
-interceptores, tiempo de recarga en ms):
+---
+
+## Escenarios incluidos
+
+| Archivo                        | Descripcion                                              |
+|-------------------------------|----------------------------------------------------------|
+| `amenazas.txt`                | Saturacion mixta (12 amenazas, tipos variados)           |
+| `escenario_borde_critico.txt` | Solo zonas criticas, tiempos muy cortos                  |
+| `escenario_hipersonico.txt`   | Misiles hipersonicos (doble velocidad de descuento)      |
+| `escenario_borde_limite.txt`  | 1 interceptor, recarga 1500ms (usar con `1 1500`)        |
+
+---
+
+## Estrategias de planificacion
+
+| # | Nombre                         | Formula / Logica                                               |
+|---|-------------------------------|----------------------------------------------------------------|
+| 1 | Menor Tiempo Restante (EDF)   | `P = (10000/t) * velocidadMisil`                              |
+| 2 | Mayor Criticidad de Zona      | `P = criticidad*1000 + 1000/t`                                |
+| 3 | Combinada (Primer Avance)     | `P = criticidad*100 + (1000-t)*(velocidad*danio)`             |
+| 4 | Minimo Danio Esperado (MDsched)| `P = criticidad * factorDanio * (10000/t)`                   |
+
+---
+
+## Tipos de misil
+
+| Tipo          | Velocidad | Factor danio | Efecto                                 |
+|---------------|-----------|-------------|----------------------------------------|
+| CONVENCIONAL  | 1.0x      | 1.0x        | Estandar                               |
+| HIPERSONICO   | 2.0x      | 1.5x        | El tiempo se consume el doble de rapido |
+| BALÍSTICO     | 1.5x      | 2.0x        | Danio critico si impacta               |
+| CRUCERO       | 0.8x      | 1.2x        | Mas lento pero dificulta la intercepcion|
+
+---
+
+## Sincronizacion (sin `synchronized`)
+
+- **Semaforo binario** (`Semaphore(1)`) en `Estadisticas`: exclusion mutua sobre los contadores compartidos.
+- **`AtomicReference` + `compareAndSet`** en `Amenaza`: transiciones de estado lock-free. Resuelve la condicion de carrera entre el interceptor (`PENDIENTE→EN_PROCESO`) y el monitor (`PENDIENTE→IMPACTADA`): solo uno de los dos gana el CAS.
+
+---
+
+## Formato del archivo de escenario
 
 ```
-java Simulador amenazas.txt 2 1000
+# Comentario
+ZONA;tiempoRestanteMs[;TIPO_MISIL]
 ```
 
-## Qué hace
-
-- **1 hilo Generador**: lee `amenazas.txt` y deposita amenazas en la cola.
-- **N hilos Interceptor**: compiten por tomar amenazas de la cola compartida y
-  las atienden durante un tiempo fijo de recarga.
-- **1 hilo Monitor**: hace correr el tiempo; si a una amenaza pendiente se le
-  agota el tiempo, la marca como **impactada**.
-
-Recurso compartido: una `PriorityBlockingQueue` ordenada por la prioridad del
-Primer Avance: `P = criticidad*100 + (1000 - tiempoRestante)`.
-
-Sincronización: semáforo binario (`Semaphore(1)`) protegiendo los contadores en
-`Estadisticas`, y variables atómicas (`AtomicReference` con `compareAndSet`) en
-`Amenaza` para las transiciones de estado, sin usar `synchronized` (evitan
-condiciones de carrera entre interceptores y monitor de forma lock-free).
-
-Al terminar imprime un resumen: generadas, interceptadas, impactadas, tiempo
-promedio de espera, criticidad total impactada y tasa de interceptación.
-
-## Escenario de prueba (saturación)
-
-Con 2 interceptores y 1000 ms de recarga, el sistema atiende ~2 amenazas por
-segundo, pero llegan ~4 por segundo. Eso provoca **saturación**: la cola se
-acumula y varias amenazas impactan. Así se ve que la planificación por
-prioridad importa (los hospitales y centrales se atienden antes que la zona
-industrial). Para comparar, se puede subir la cantidad de interceptores o el
-tiempo de recarga y ver cómo cambian las métricas.
-
-## Limitaciones conocidas (a mejorar para la entrega final)
-
-Esta es una primera versión pensada para demostrar que el camino es correcto;
-quedan cosas por pulir:
-
-- **Una sola estrategia de planificación** implementada (la fórmula combinada).
-  La letra pide al menos dos para comparar; se agregarán (ej.: solo por menor
-  tiempo restante, solo por criticidad) y un menú para elegirla.
-- La prioridad usa `tiempoRestante`, que el Monitor va modificando. La
-  `PriorityBlockingQueue` no reordena automáticamente al cambiar ese valor; el
-  orden se fija al insertar. Para la versión final se evaluará recalcular el
-  orden o usar otra estructura.
-- El Monitor usa un *busy-wait* simple con `sleep` en lugar de variables de
-  condición más finas.
-- El fin de la simulación se detecta por sondeo (polling) cada 100 ms.
+Zonas validas: `HOSPITAL`, `CENTRAL_ELECTRICA`, `DATACENTER`, `RESIDENCIAL`, `INDUSTRIAL`  
+Tipos de misil: `CONVENCIONAL`, `HIPERSONICO`, `BALÍSTICO`, `CRUCERO` (opcional, default: CONVENCIONAL)

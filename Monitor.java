@@ -1,29 +1,39 @@
 import java.util.concurrent.BlockingQueue;
 
 /*
- * Hilo Monitor: controla el paso del tiempo de las amenazas que siguen
- * esperando en la cola.
+ * Hilo Monitor: controla el paso del tiempo para las amenazas pendientes.
  *
- * Cada "tick" reduce el tiempo restante de cada amenaza pendiente. Si a alguna
- * se le agota el tiempo y todavia no fue atendida, la marca como IMPACTADA y
- * la saca de la cola.
+ * Cada "tick" (periodo configurable) reduce el tiempoRestante de cada
+ * amenaza que sigue en la cola. La reduccion ya esta ajustada por la
+ * velocidad del misil dentro de Amenaza.reducirTiempo().
  *
- * Las amenazas que ya fueron tomadas por un interceptor no estan en la cola,
- * asi que el Monitor no las toca (se consideran atendidas a tiempo).
+ * Si el tiempo de una amenaza llega a cero o menos:
+ *   - Intenta marcarla IMPACTADA via CAS (intentarImpactar()).
+ *   - Si el CAS tiene exito: la saca de la cola y registra el impacto.
+ *   - Si falla: un interceptor ya la tomo a tiempo; no se hace nada.
+ *
+ * DISEÑO:
+ *   Iterar sobre la PriorityBlockingQueue mientras otros hilos la usan
+ *   es seguro en Java (el iterador es weakly-consistent y no lanza
+ *   ConcurrentModificationException). La operacion cola.remove(a) es
+ *   O(n) pero con colas pequenas en la simulacion esto es aceptable.
+ *
+ *   No se usa synchronized en el loop del Monitor; la atomicidad de
+ *   intentarImpactar() garantiza que solo un hilo gana la carrera.
  */
 public class Monitor extends Thread {
 
     private final BlockingQueue<Amenaza> cola;
-    private final Estadisticas stats;
-    private final int tick;     // cada cuanto revisa (ms)
+    private final Estadisticas           stats;
+    private final int                    tick; // ms de resolucion del reloj
 
     private volatile boolean activo = true;
 
     public Monitor(BlockingQueue<Amenaza> cola, Estadisticas stats, int tick) {
         super("Monitor");
-        this.cola = cola;
+        this.cola  = cola;
         this.stats = stats;
-        this.tick = tick;
+        this.tick  = tick;
     }
 
     @Override
@@ -36,22 +46,22 @@ public class Monitor extends Thread {
                 break;
             }
 
-            // Recorremos una copia de la cola para ir restando tiempo.
             for (Amenaza a : cola) {
                 a.reducirTiempo(tick);
                 if (a.getTiempoRestante() <= 0) {
                     if (a.intentarImpactar()) {
                         cola.remove(a);
-                        stats.registrarImpactada(a.getZona().getCriticidad());
-                        System.out.println("[Monitor] IMPACTO !! " + a
-                                + " (no se llego a interceptar)");
+                        stats.registrarImpactada(
+                                a.getZona().getCriticidad(),
+                                a.danioEfectivo());
+                        System.out.printf("[Monitor] !!! IMPACTO %s  danio=%.1f%n",
+                                a, a.danioEfectivo());
                     }
                 }
             }
         }
+        System.out.println("[Monitor] detenido.");
     }
 
-    public void detener() {
-        activo = false;
-    }
+    public void detener() { activo = false; }
 }
