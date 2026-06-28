@@ -1,7 +1,7 @@
 # Sistema Concurrente de Intercepcion de Amenazas Aereas
-**Sistemas Operativos — UCU 2026 — Entrega Final**
+**Sistemas Operativos - Entrega Final - 2026-1S**
 
-Integrantes: María Belén Mendes · Nahuel Benítez · Franco Di Salvatore
+Integrantes: María Belén Mendes, Nahuel Benítez, Franco Di Salvatore
 
 ---
 
