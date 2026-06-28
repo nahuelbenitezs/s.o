@@ -24,6 +24,20 @@
  *                   Minimiza el danio total esperado: privilegia alta criticidad,
  *                   alto danio y urgencia temporal de forma multiplicativa.
  *                   Es la estrategia "optima" en escenarios heterogeneos.
+ *
+ *  MLQ            : Multi-Level Queue (Colas de Multiples Niveles).
+ *                   En vez de una sola formula, separa las amenazas en 3
+ *                   colas segun la criticidad de su zona, cada una con su
+ *                   propio algoritmo interno:
+ *                     - ALTA  (Hospital, Central Electrica): EDF, por menor
+ *                       tiempo restante.
+ *                     - MEDIA (Datacenter): FCFS, por orden de llegada.
+ *                     - BAJA  (Residencial, Industrial): FCFS con rotacion
+ *                       circular entre las pendientes de ese nivel.
+ *                   Siempre se atiende primero el nivel ALTA si tiene
+ *                   amenazas pendientes; solo si esta vacio se pasa a MEDIA,
+ *                   y asi sucesivamente. El Simulador implementa esto con
+ *                   3 PriorityBlockingQueue separadas en vez de una sola.
  */
 public enum Estrategia {
 
@@ -42,6 +56,10 @@ public enum Estrategia {
     DANIO_ESPERADO(
         "Minimo Danio Esperado (MDsched)",
         "P = criticidad * factorDanio * (1000/t). Minimiza el danio total acumulado."
+    ),
+    MLQ(
+        "Colas de Multiples Niveles (3 colas)",
+        "ALTA=EDF, MEDIA=FCFS, BAJA=FCFS con rotacion. Se atiende siempre el nivel mas alto con pendientes."
     );
 
     private final String nombre;

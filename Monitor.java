@@ -41,12 +41,29 @@ import java.util.concurrent.BlockingQueue;
  *   su loop normalmente (poll con timeout); no se pierde ninguna amenaza
  *   porque drainTo() devuelve todos los elementos sacados y se reinsertan
  *   todos los que siguen pendientes.
+ *
+ * RESOLUCION DE TIEMPO FIJA:
+ *   El parametro tick es la unica resolucion temporal del sistema: el
+ *   Simulador lo fija en TICK_MS=200 y lo pasa tanto al Monitor (periodo
+ *   de actualizacion) como al Interceptor (timeout de poll()), de forma
+ *   que ambos compartan la misma nocion de "instante". No es un reloj
+ *   logico por eventos (el tiempo real de Thread.sleep sigue marcando el
+ *   paso de la simulacion), pero al quedar unificado en una sola constante
+ *   se elimina el desajuste de tener dos resoluciones distintas conviviendo
+ *   en el mismo sistema.
+ *
+ * COMPATIBILIDAD CON MLQ:
+ *   Esta clase no conoce la estrategia activa: actualiza tiempos e impacta
+ *   amenazas vencidas sobre cualquier BlockingQueue<Amenaza> que reciba.
+ *   Cuando la estrategia elegida es Estrategia.MLQ, el Simulador arma 3
+ *   colas (ALTA/MEDIA/BAJA) y lanza 3 instancias de Monitor, una por cada
+ *   cola, sin necesidad de modificar esta clase.
  */
 public class Monitor extends Thread {
 
     private final BlockingQueue<Amenaza> cola;
     private final Estadisticas           stats;
-    private final int                    tick; // ms de resolucion del reloj
+    private final int                    tick; // ms de resolucion fija del reloj (200ms)
 
     private volatile boolean activo = true;
 

@@ -15,7 +15,11 @@ import java.util.concurrent.BlockingQueue;
  *   las lineas vacias o que empiezan con '#' son ignoradas
  *   TIPO_MISIL es opcional; si se omite, se usa CONVENCIONAL.
  *
- * El generador inserta mas rapido de lo que los interceptores pueden atender, lo que provoca el escenario de saturacion
+ * El generador inserta mas rapido de lo que los interceptores pueden atender, lo que provoca el escenario de saturacion.
+ *
+ * Si la estrategia activa es Estrategia.MLQ, el log de cada llegada muestra
+ * el nivel de cola (ALTA/MEDIA/BAJA) en lugar de un valor de prioridad
+ * numerico, porque esa estrategia no usa una formula unica (ver Simulador).
  */
 public class Generador extends Thread {
 
@@ -75,7 +79,13 @@ public class Generador extends Thread {
                 cola.put(a);
                 stats.registrarGenerada();
 
-                System.out.printf("[Generador] +++ %s  P=%.0f%n", a, a.prioridad(estrategia));
+                String[] niveles = {"ALTA", "MEDIA", "BAJA"};
+                if (estrategia == Estrategia.MLQ) {
+                    System.out.printf("[Generador] +++ %s  nivelMLQ=%s%n",
+                            a, niveles[a.nivelMLQ()]);
+                } else {
+                    System.out.printf("[Generador] +++ %s  P=%.0f%n", a, a.prioridad(estrategia));
+                }
 
                 if (pausaEntreLlegadas > 0) {
                     Thread.sleep(pausaEntreLlegadas);

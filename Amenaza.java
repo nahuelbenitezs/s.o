@@ -122,7 +122,13 @@ public class Amenaza {
                 // Privilegia: zona critica + misil peligroso + urgente.
                 return crit * danio * (10_000.0 / t);
 
+            case MLQ:
             default:
+                // MLQ no usa una formula unica de prioridad: separa las
+                // amenazas en 3 colas por nivel de criticidad y cada cola
+                // tiene su propio criterio interno (ver Simulador). Este
+                // metodo no se llama bajo MLQ, pero se devuelve 0 en vez de
+                // lanzar una excepcion para mantener el metodo total.
                 return 0;
         }
     }
@@ -169,6 +175,21 @@ public class Amenaza {
     /** Danio efectivo si impacta: criticidad de zona x factor del misil. */
     public double danioEfectivo() {
         return zona.getCriticidad() * tipoMisil.getFactorDanio();
+    }
+
+    /**
+     * Nivel de la cola MLQ al que pertenece esta amenaza, segun la
+     * criticidad de su zona. Se usa solo cuando la estrategia activa es
+     * Estrategia.MLQ (ver Simulador, que mantiene 3 colas separadas).
+     *   0 = ALTA  (Hospital, Central Electrica: criticidad >= 8)
+     *   1 = MEDIA (Datacenter: criticidad >= 6)
+     *   2 = BAJA  (Residencial, Industrial: criticidad < 6)
+     */
+    public int nivelMLQ() {
+        int c = zona.getCriticidad();
+        if (c >= 8) return 0;
+        if (c >= 6) return 1;
+        return 2;
     }
 
     @Override

@@ -1,0 +1,31 @@
+# Escenario 5: MLQ - contraste entre los 3 niveles de cola
+# Pensado para la estrategia MLQ (5 en el menu de Estrategia).
+# Nivel ALTA  (Hospital, Central Electrica): se ordena por EDF (menor
+#              tiempo restante primero).
+# Nivel MEDIA (Datacenter): FCFS, orden de llegada.
+# Nivel BAJA  (Residencial, Industrial): FCFS, orden de llegada.
+#
+# Con 2 interceptores y recarga 1000ms, hay 10 amenazas total:
+#   - 4 de nivel ALTA, con tiempos cruzados entre si para que se note que
+#     dentro de ALTA manda el menor tiempo restante y no el orden de llegada
+#     (la 2da Hospital que llega tiene MENOS tiempo que la 1ra Central).
+#   - 3 de nivel MEDIA, todas con tiempo holgado, para verificar que solo
+#     se atienden cuando ALTA esta vacia.
+#   - 3 de nivel BAJA, con tiempo MUY holgado, para verificar que solo se
+#     atienden cuando ALTA y MEDIA estan vacias (deberian impactar la
+#     mayoria si la simulacion no dura lo suficiente).
+#
+# Resultado esperado: ALTA se interceptan todas o casi todas (siempre
+# entran antes que MEDIA/BAJA); MEDIA se interceptan parcialmente; BAJA
+# es la que mas impactos sufre, mostrando el orden de prioridad de nivel.
+
+CENTRAL_ELECTRICA;2200;CONVENCIONAL
+HOSPITAL;1800;HIPERSONICO
+HOSPITAL;2600;CONVENCIONAL
+CENTRAL_ELECTRICA;2000;BALISTICO
+DATACENTER;3500;CONVENCIONAL
+DATACENTER;3800;CONVENCIONAL
+DATACENTER;4000;CRUCERO
+RESIDENCIAL;5000;CONVENCIONAL
+INDUSTRIAL;5200;CONVENCIONAL
+RESIDENCIAL;5500;CONVENCIONAL
