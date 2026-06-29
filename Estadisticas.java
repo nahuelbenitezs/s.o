@@ -1,11 +1,9 @@
 
 import java.util.concurrent.Semaphore;
 
-/*
- * Contadores y metricas de la simulacion. Como los escriben varios hilos
+/*Contadores y metricas de la simulacion. Como los escriben varios hilos
  * (Generador, Interceptores y Despachador), el acceso se protege con un semaforo
- * binario (mutex): primero acquire() y, si salio bien, se libera en el finally.
- */
+ * binario (mutex): primero acquire() y, si salio bien, se libera en el finally.*/
 public class Estadisticas {
 
     private final Semaphore mutex = new Semaphore(1);
@@ -13,9 +11,9 @@ public class Estadisticas {
     private int generadas = 0;
     private int interceptadas = 0;
     private int impactadas = 0;
-    private long sumaEsperaInterceptadas = 0;     // espera en cola de las interceptadas
-    private long sumaRetornoInterceptadas = 0;    // turnaround de las interceptadas
-    private int criticidadImpactada = 0;          // suma de criticidad de las impactadas
+    private long sumaEsperaInterceptadas = 0; // espera en cola de las interceptadas
+    private long sumaRetornoInterceptadas = 0; // turnaround de las interceptadas
+    private int criticidadImpactada = 0; // suma de criticidad de las impactadas
 
     public void registrarGenerada() {
         if (!tomar()) {
@@ -92,15 +90,13 @@ public class Estadisticas {
     public void imprimirResumen(Interceptor[] interceptores, long tFin) {
         System.out.println();
         System.out.println("RESUMEN DE LA SIMULACION");
-        System.out.println("Amenazas generadas    : " + generadas);
+        System.out.println("Amenazas generadas: " + generadas);
         System.out.println("Amenazas interceptadas: " + interceptadas);
-        System.out.println("Amenazas impactadas   : " + impactadas);
+        System.out.println("Amenazas impactadas: " + impactadas);
 
         if (interceptadas > 0) {
-            System.out.println("Tiempo promedio de espera (interceptadas): "
-                    + (sumaEsperaInterceptadas / interceptadas) + " ms");
-            System.out.println("Tiempo promedio de retorno (turnaround)  : "
-                    + (sumaRetornoInterceptadas / interceptadas) + " ms");
+            System.out.println("Tiempo promedio de espera (interceptadas): " + (sumaEsperaInterceptadas / interceptadas) + " ms");
+            System.out.println("Tiempo promedio de retorno (turnaround)  : " + (sumaRetornoInterceptadas / interceptadas) + " ms");
         }
         if (generadas > 0) {
             double tasa = (100.0 * interceptadas) / generadas;
@@ -115,17 +111,19 @@ public class Estadisticas {
         for (Interceptor in : interceptores) {
             ocupadoTotal += in.getTiempoOcupado();
         }
+        
         if (tFin > 0 && interceptores.length > 0) {
+            
             double util = (100.0 * ocupadoTotal) / ((long) interceptores.length * tFin);
             System.out.printf("Utilizacion de los interceptores: %.1f%%%n", util);
+            
             for (Interceptor in : interceptores) {
+                
                 double u = (100.0 * in.getTiempoOcupado()) / tFin;
-                System.out.printf("   Interceptor-%d: %d ms ocupado (%.1f%%)%n",
-                        in.getNumero(), in.getTiempoOcupado(), u);
+                System.out.printf("   Interceptor-%d: %d ms ocupado (%.1f%%)%n", in.getNumero(), in.getTiempoOcupado(), u);
             }
         }
 
-        System.out.println("Criticidad total impactada: " + criticidadImpactada
-                + "  (suma de la criticidad de las zonas que recibieron impacto)");
+        System.out.println("Criticidad total impactada: " + criticidadImpactada + "  (suma de la criticidad de las zonas que recibieron impacto)");
     }
 }

@@ -2,25 +2,19 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/*
- * Estrategia 2: MLQ, tres colas por nivel de criticidad, cada una con su algoritmo:
- *   - ALTA  (hospital, central): EDF (menor tiempo hasta el impacto)
- *   - MEDIA (datacenter):        FCFS (orden de llegada)
- *   - BAJA  (residencial, industrial): rotacion circular entre las pendientes
- *
- * Se atiende siempre el nivel mas alto que tenga pendientes y recien cuando se
- * vacia se pasa al siguiente. La rotacion de la cola baja reparte la atencion;
- * como el servicio no es apropiativo y no hay quantum, no es un Round Robin clasico.
- */
+// Estrategia con 3 colas segun criticidad
+// ALTA -> EDF (impacto más cercano)
+// MEDIA -> FCFS (orden de llegada)
+// BAJA -> rotación simple
 public class ColasMultinivel implements Estrategia {
 
-    private int rrBaja = 0; // puntero de rotacion para el nivel bajo
+    private int rrBaja = 0; // puntero para rotar la cola baja
 
     private int nivel(Amenaza a) {
         int c = a.getZona().getCriticidad();
-        if (c >= 8) return 0;   // ALTA
-        if (c >= 6) return 1;   // MEDIA
-        return 2;               // BAJA
+        if (c >= 8) return 0; // alta
+        if (c >= 6) return 1; // media
+        return 2;             // baja
     }
 
     @Override
@@ -33,6 +27,7 @@ public class ColasMultinivel implements Estrategia {
         List<Amenaza> alta = new ArrayList<>();
         List<Amenaza> media = new ArrayList<>();
         List<Amenaza> baja = new ArrayList<>();
+        
         for (Amenaza a : pendientes) {
             int n = nivel(a);
             if (n == 0) alta.add(a);

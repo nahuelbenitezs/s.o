@@ -2,15 +2,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/*
- * Estrategia 1: prioridades por criticidad y urgencia, con envejecimiento.
+/* Estrategia 1: prioridades por criticidad y urgencia, con envejecimiento.
  *
  *   puntaje = criticidad*10000 + (5000 - tiempoRestante) + (tNow - llegada)
  *
  * El factor 10000 hace que la criticidad pese mas que la urgencia. El ultimo
  * termino (envejecimiento) sube de a poco a las que esperan, para reducir la
- * inanicion de las zonas de baja criticidad.
- */
+ * inanicion de las zonas de baja criticidad. */
+
 public class PrioridadCombinada implements Estrategia {
 
     private static final int K = 10000;

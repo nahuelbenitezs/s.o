@@ -2,11 +2,8 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
-/*
- * Cola de llegadas entre el Generador (productor) y el Despachador (consumidor).
- * Es un productor-consumidor con semaforos: mutex para la cola e items para
- * contar cuantas llegadas hay. acquire() = Wait/P y release() = Signal/V.
- */
+// Cola de llegadas entre Generador y Despachador.
+// Usa semáforos para sincronizar productor-consumidor.
 public class ColaLlegadas {
 
     private final Queue<Evento> buffer = new LinkedList<>();
@@ -19,11 +16,8 @@ public class ColaLlegadas {
     public void poner(Evento e) {
         try {
             mutex.acquire();
-            try {
-                buffer.add(e);
-            } finally {
-                mutex.release();
-            }
+            buffer.add(e);
+            mutex.release();
             items.release();
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -41,11 +35,9 @@ public class ColaLlegadas {
         try {
             items.acquire();
             mutex.acquire();
-            try {
-                return buffer.poll(); // null = nos desperto el cierre y no hay nada
-            } finally {
-                mutex.release();
-            }
+            Evento ev = buffer.poll(); // puede ser null si se cerró
+            mutex.release();
+            return ev;
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             return null;

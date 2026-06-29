@@ -1,11 +1,9 @@
-/*
- * Un evento de la simulacion. Puede ser:
- *   LLEGADA      -> llega una amenaza nueva
+/*Un evento de la simulacion. Puede ser:
+ *   LLEGADA -> llega una amenaza nueva
  *   FIN_SERVICIO -> un interceptor termina la recarga
- *   IMPACTO      -> a una amenaza se le agota el tiempo
+ *   IMPACTO -> a una amenaza se le agota el tiempo
  *
- * Se ordenan por tiempo; ante empate, por tipo y por un numero de secuencia.
- */
+ * Se ordenan por tiempo; ante empate, por tipo y por un numero de secuencia.*/
 public class Evento implements Comparable<Evento> {
 
     public enum Tipo { LLEGADA, FIN_SERVICIO, IMPACTO }
@@ -26,8 +24,13 @@ public class Evento implements Comparable<Evento> {
 
     @Override
     public int compareTo(Evento o) {
-        if (this.tiempo != o.tiempo) return Long.compare(this.tiempo, o.tiempo);
-        if (this.tipo != o.tipo)     return Integer.compare(this.tipo.ordinal(), o.tipo.ordinal());
+
+        if (this.tiempo != o.tiempo) 
+            return Long.compare(this.tiempo, o.tiempo);
+
+        if (this.tipo != o.tipo)
+            return Integer.compare(this.tipo.ordinal(), o.tipo.ordinal());
+        
         return Long.compare(this.seq, o.seq);
     }
 }

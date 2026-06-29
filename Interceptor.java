@@ -1,21 +1,21 @@
+
 import java.util.concurrent.Semaphore;
 
-/*
- * Un interceptor (recurso), corriendo en su propio hilo. Hay N en paralelo.
+/* Un interceptor (recurso), corriendo en su propio hilo. Hay N en paralelo.
  *
  * Espera a que el Despachador le asigne una amenaza, espera el fin de la recarga
  * y la marca como interceptada. Al terminar hace release() del semaforo de
  * recursos (el Despachador hizo tryAcquire() al asignar).
  *
  * Usa tres semaforos para coordinarse con el Despachador:
- *   asignacion  -> el Despachador le da trabajo
+ *   asignacion -> el Despachador le da trabajo
  *   finServicio -> el Despachador avisa que el reloj llego al fin de la recarga
- *   confirmacion-> el interceptor avisa que ya termino (asi la salida queda ordenada)
- */
+ *   confirmacion -> el interceptor avisa que ya termino (asi la salida queda ordenada)*/
+
 public class Interceptor extends Thread {
 
     private final int id;
-    private final Semaphore recursos;     // semaforo contador Semaphore(N)
+    private final Semaphore recursos; // semaforo contador Semaphore(N)
     private final Estadisticas stats;
 
     private final Semaphore asignacion = new Semaphore(0);
@@ -27,8 +27,8 @@ public class Interceptor extends Thread {
     private volatile long tFin;
     private volatile boolean activo = true;
 
-    private volatile long tiempoOcupado = 0;  // para la utilizacion
-    private boolean ocupado = false;          // lo maneja solo el Despachador
+    private volatile long tiempoOcupado = 0; // para la utilizacion
+    private boolean ocupado = false; // lo maneja solo el Despachador
 
     public Interceptor(int id, Semaphore recursos, Estadisticas stats) {
         super("Interceptor-" + id);
@@ -37,10 +37,21 @@ public class Interceptor extends Thread {
         this.stats = stats;
     }
 
-    public int getNumero() { return id; }
-    public long getTiempoOcupado() { return tiempoOcupado; }
-    public boolean isOcupado() { return ocupado; }
-    public void setOcupado(boolean b) { this.ocupado = b; }
+    public int getNumero() {
+        return id;
+    }
+
+    public long getTiempoOcupado() {
+        return tiempoOcupado;
+    }
+
+    public boolean isOcupado() {
+        return ocupado;
+    }
+
+    public void setOcupado(boolean b) {
+        this.ocupado = b;
+    }
 
     // el Despachador le entrega una amenaza
     public void asignar(Amenaza a, long inicio, long fin) {
@@ -74,7 +85,7 @@ public class Interceptor extends Thread {
     public void run() {
         while (true) {
             try {
-                asignacion.acquire();          // espera trabajo
+                asignacion.acquire(); // espera trabajo
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -84,7 +95,7 @@ public class Interceptor extends Thread {
             }
 
             try {
-                finServicio.acquire();         // espera el fin de la recarga
+                finServicio.acquire(); // espera el fin de la recarga
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -99,7 +110,7 @@ public class Interceptor extends Thread {
             long retorno = tFin - a.getInstanteLlegada();
             stats.registrarInterceptada(espera, retorno);
 
-            recursos.release();     // libera el recurso
+            recursos.release(); // libera el recurso
             confirmacion.release(); // avisa al Despachador
         }
     }

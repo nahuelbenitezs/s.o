@@ -6,13 +6,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-/*
- * Hilo Generador (productor). Lee el archivo de escenario y deposita las amenazas
+/* Hilo Generador (productor). Lee el archivo de escenario y deposita las amenazas
  * como eventos de llegada en la ColaLlegadas.
  *
  * Formato del archivo:  ZONA;tiempoRestanteMs[;instanteLlegadaMs]
- * El instante de llegada es opcional; si no esta, se usa indice * pausaEntreLlegadas.
- */
+ * El instante de llegada es opcional; si no esta, se usa indice * pausaEntreLlegadas.*/
 public class Generador extends Thread {
 
     private final String archivo;
@@ -38,10 +36,12 @@ public class Generador extends Thread {
 
         // se entregan en orden de llegada
         Collections.sort(amenazas, new Comparator<Amenaza>() {
+            
             public int compare(Amenaza a, Amenaza b) {
                 int cmp = Long.compare(a.getInstanteLlegada(), b.getInstanteLlegada());
                 return (cmp != 0) ? cmp : Integer.compare(a.getId(), b.getId());
             }
+
         });
 
         long seq = 0;
@@ -53,6 +53,7 @@ public class Generador extends Thread {
         terminado = true;
         cola.cerrar();
         if (verbose) {
+
             System.out.println("[Generador] Termino de generar " + amenazas.size() + " amenazas.");
         }
     }
@@ -61,18 +62,24 @@ public class Generador extends Thread {
         List<Amenaza> amenazas = new ArrayList<>();
         int id = 1;
         int indice = 0;
+        
         try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            
             String linea;
+            
             while ((linea = br.readLine()) != null) {
                 linea = linea.trim();
+                
                 if (linea.isEmpty() || linea.startsWith("#")) {
                     continue;
                 }
+
                 String[] partes = linea.split(";");
                 if (partes.length < 2) {
                     System.out.println("[Generador] Linea ignorada (formato invalido): " + linea);
                     continue;
                 }
+                
                 Zona zona;
                 int tiempo;
                 try {
@@ -82,6 +89,7 @@ public class Generador extends Thread {
                     System.out.println("[Generador] Linea ignorada (dato invalido): " + linea);
                     continue;
                 }
+                
                 long llegada;
                 if (partes.length >= 3) {
                     llegada = Long.parseLong(partes[2].trim());
@@ -91,6 +99,7 @@ public class Generador extends Thread {
                 amenazas.add(new Amenaza(id++, zona, tiempo, llegada));
                 indice++;
             }
+            
         } catch (IOException e) {
             System.out.println("[Generador] No se pudo leer el archivo: " + archivo);
         }
