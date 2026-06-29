@@ -1,3 +1,4 @@
+import java.util.Scanner;
 import java.util.concurrent.Semaphore;
 
 /*
@@ -7,6 +8,7 @@ import java.util.concurrent.Semaphore;
  * (recursos, controlados por un Semaphore(N)).
  *
  * Uso:
+ *   java Simulador                    -> menu para elegir archivo, N, recarga y estrategia
  *   java Simulador [archivo] [N] [recargaMs] [estrategia]
  *     estrategia: 1 = Prioridades+envejecimiento (default)
  *                 2 = MLQ (3 colas)
@@ -20,19 +22,80 @@ public class Simulador {
     private static final int PAUSA_LLEGADAS_MS  = 250;
 
     public static void main(String[] args) {
-        if (args.length >= 1 && args[0].equalsIgnoreCase("batch")) {
+        if (args.length == 0) {
+            menu();
+            return;
+        }
+        if (args[0].equalsIgnoreCase("batch")) {
             String archivo = (args.length >= 2) ? args[1] : "amenazas.txt";
             batch(archivo);
             return;
         }
 
-        String archivo = (args.length >= 1) ? args[0] : "amenazas.txt";
+        String archivo = args[0];
         int n = (args.length >= 2) ? Integer.parseInt(args[1]) : CANT_INTERCEPTORES;
         int recarga = (args.length >= 3) ? Integer.parseInt(args[2]) : TIEMPO_RECARGA_MS;
         int estrategiaId = (args.length >= 4) ? Integer.parseInt(args[3]) : 1;
 
-        Estrategia estrategia = crearEstrategia(estrategiaId);
+        ejecutar(archivo, n, recarga, crearEstrategia(estrategiaId));
+    }
 
+    // menu interactivo: pregunta escenario, N, recarga y estrategia
+    private static void menu() {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("=== Sistema concurrente de intercepcion de amenazas aereas ===");
+        System.out.println("(en cada pregunta, toca Enter para usar el valor entre parentesis)");
+        System.out.println();
+
+        System.out.println("Escenario a simular:");
+        System.out.println("  1) amenazas.txt           - saturacion general (12 amenazas)");
+        System.out.println("  2) amenazas_critico.txt   - criticidad vs urgencia (10 amenazas)");
+        System.out.println("  3) escenario_liviano.txt  - sin saturacion (5 amenazas)");
+        System.out.println("  4) escenario_saturado.txt - saturacion fuerte (12 amenazas)");
+        System.out.print("Elegir escenario 1-4 (Enter = 1): ");
+        String archivo = archivoDeOpcion(leerInt(sc, 1));
+
+        System.out.print("Cantidad de interceptores (Enter = " + CANT_INTERCEPTORES + "): ");
+        int n = leerInt(sc, CANT_INTERCEPTORES);
+
+        System.out.print("Tiempo de recarga en ms (Enter = " + TIEMPO_RECARGA_MS + "): ");
+        int recarga = leerInt(sc, TIEMPO_RECARGA_MS);
+
+        System.out.println("Estrategia de planificacion:");
+        System.out.println("  1) Prioridades (Event-Driven) con envejecimiento");
+        System.out.println("  2) MLQ - 3 colas (EDF / FCFS / rotacion)");
+        System.out.println("  3) EDF (menor tiempo hasta el impacto)");
+        System.out.print("Elegir estrategia 1-3 (Enter = 1): ");
+        int estrategiaId = leerInt(sc, 1);
+
+        System.out.println();
+        ejecutar(archivo, n, recarga, crearEstrategia(estrategiaId));
+    }
+
+    // mapea la opcion 1-4 del menu al nombre de archivo
+    private static String archivoDeOpcion(int opcion) {
+        switch (opcion) {
+            case 2:  return "amenazas_critico.txt";
+            case 3:  return "escenario_liviano.txt";
+            case 4:  return "escenario_saturado.txt";
+            default: return "amenazas.txt";
+        }
+    }
+
+    // lee un entero de la consola; si la linea esta vacia o es invalida usa porDefecto
+    private static int leerInt(Scanner sc, int porDefecto) {
+        String linea = sc.nextLine().trim();
+        if (linea.isEmpty()) return porDefecto;
+        try {
+            return Integer.parseInt(linea);
+        } catch (NumberFormatException e) {
+            return porDefecto;
+        }
+    }
+
+    // imprime la cabecera, corre la simulacion y muestra el resumen
+    private static void ejecutar(String archivo, int n, int recarga, Estrategia estrategia) {
         System.out.println("=== Sistema concurrente de intercepcion de amenazas aereas ===");
         System.out.println("Archivo de escenario : " + archivo);
         System.out.println("Interceptores (N)    : " + n);

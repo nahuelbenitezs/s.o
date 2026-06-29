@@ -1,0 +1,17 @@
+# Escenario saturado: muchas amenazas urgentes y muy juntas.
+# Con N=2 y recarga 1000 el sistema queda muy saturado: impactan varias.
+# Sirve para ver como la estrategia decide a cuales salvar bajo presion.
+# Formato: ZONA;tiempoRestanteMs[;instanteLlegadaMs]
+
+INDUSTRIAL;900
+RESIDENCIAL;1000
+HOSPITAL;1100
+DATACENTER;950
+CENTRAL_ELECTRICA;1050
+INDUSTRIAL;800
+HOSPITAL;1200
+RESIDENCIAL;850
+DATACENTER;1000
+CENTRAL_ELECTRICA;900
+HOSPITAL;1300
+INDUSTRIAL;750

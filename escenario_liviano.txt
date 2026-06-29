@@ -1,0 +1,10 @@
+# Escenario liviano: pocas amenazas y con tiempo de sobra.
+# Con N=2 y recarga 1000 el sistema NO se satura: se interceptan casi todas.
+# Sirve para mostrar el contraste con los escenarios saturados.
+# Formato: ZONA;tiempoRestanteMs[;instanteLlegadaMs]
+
+HOSPITAL;2500
+INDUSTRIAL;2600
+CENTRAL_ELECTRICA;2400
+RESIDENCIAL;2700
+DATACENTER;2800
