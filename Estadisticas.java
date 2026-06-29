@@ -65,9 +65,8 @@ public class Estadisticas {
     }
 
     public int getGeneradas() {
-        return generadas; 
-        
-    
+        return generadas;
+    }
 
     public int getInterceptadas() {
         return interceptadas;
